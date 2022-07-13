@@ -1,92 +1,205 @@
-# hobot_audio
+# 功能介绍
+
+hobot_audio package是地平线机器人开发平台的一部分，通过阅读本文档，用户可以在地平线X3开发板上采集音频并且对音频进行AI智能处理，音频数据以及AI结果可以用于其他功能的开发。
+
+hobot_audio package源码包含audio_capture采集音频、audio_engine将原始采集到的音频数据送入horizon_speech_sdk做智能处理。horizon_speech_sdk是地平线智能语音处理sdk，内部封装了算法模型推理过程。sdk智能处理结果包括唤醒事件、命令词等信息，这些智能信息会通过hobot_audio package发布audio_msg::msg::SmartAudioData类型消息给用户使用，可用于唤醒设备之后进行设备控制等。
+
+hobot_audio package内部使用的语音智能处理sdk是离线模式，不需要在线与云端通讯运行。
+
+此Package的语音算法sdk适用于与X3适配的线性四麦的麦克风阵列。
 
 
 
-## Getting started
+# 编译
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 依赖库
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- horizon_speech_sdk
+- audio_msg
 
-## Add your files
+horizon_speech_sdk是地平线封装的对原始语音进行智能处理的sdk，内部封装了语音的算法处理部分，包括降噪、唤醒、语音VAD、ASR、Doa等处理，此package仅处理唤醒以及asr识别的命令词部分功能。
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+audio_msg为自定义的智能音频帧消息格式，用于算法模型推理后，发布推理结果，audio_msg pkg定义在hobot_msgs中。
+
+## 开发环境
+
+- 编程语言: C/C++
+- 开发平台: X3/X86
+- 系统版本：Ubuntu 20.0.4
+- 编译工具链:Linux GCC 9.3.0/Linaro GCC 9.3.0
+
+## 编译
+
+ 支持在X3 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
+
+### Ubuntu板端编译
+
+1. 编译环境确认 
+   - 板端已安装X3 Ubuntu系统。
+   - 当前编译终端已设置TogetherROS环境变量：`source PATH/setup.bash`。其中PATH为TogetherROS的安装路径。
+   - 已安装ROS2编译工具colcon，安装命令：`pip install -U colcon-common-extensions`
+2. 编译
+
+编译命令：`colcon build --packages-select hobot_audio`
+
+### Docker交叉编译
+
+1. 编译环境确认
+
+   - 在docker中编译，并且docker中已经安装好TogetherROS。docker安装、交叉编译说明、TogetherROS编译和部署说明详见机器人开发平台robot_dev_config repo中的README.md。
+
+2. 编译
+
+   - 编译命令：
 
 ```
-cd existing_repo
-git remote add origin https://c-gitlab.horizon.ai/HHP/box/hobot_audio.git
-git branch -M main
-git push -uf origin main
+export TARGET_ARCH=aarch64
+export TARGET_TRIPLE=aarch64-linux-gnu
+export CROSS_COMPILE=/usr/bin/$TARGET_TRIPLE-
+
+colcon build --packages-select hobot_audio \
+   --merge-install \
+   --cmake-force-configure \
+   --cmake-args \
+   --no-warn-unused-cli \
+   -DCMAKE_TOOLCHAIN_FILE=`pwd`/robot_dev_config/aarch64_toolchainfile.cmake
 ```
 
-## Integrate with your tools
+## 注意事项
 
-- [ ] [Set up project integrations](https://c-gitlab.horizon.ai/HHP/box/hobot_audio/-/settings/integrations)
+编译需要依赖horizon_speech_sdk以及其依赖的算法库。horizon_speech_sdk 以及算法推理库由地平线编译好提供，目前已包括在hobot_audio package里面。
 
-## Collaborate with your team
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
 
-## Test and Deploy
+# 使用介绍
 
-Use the built-in continuous integration in GitLab.
+## 依赖
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## 参数
 
-***
+| 参数名               | 类型        | 解释               | 是否必须 | 支持的配置       | 默认值       |
+| -------------------- | ----------- | ------------------ | -------- | ---------------- | ------------ |
+| config_path          | std::string | 配置文件路径       | 否       | 根据实际情况配置 | ./config     |
+| audio_pub_topic_name | std::string | 音频智能帧发布话题 | 否       | 根据实际情况配置 | /audio_smart |
 
-# Editing this README
+audio_config.json配置文件参数说明：
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+| 参数名               | 类型 | 解释                         | 是否必须 | 支持的配置       | 默认值 |
+| -------------------- | ---- | ---------------------------- | -------- | ---------------- | ------ |
+| micphone_enable      | int  | 是否使能麦克风               | 是       | 0/1              | 1      |
+| micphone_rate        | int  | 麦克风采样率                 | 否       | 16000            | 16000  |
+| micphone_chn         | int  | 麦克风通道数                 | 是       | 根据实际硬件配置 | 6      |
+| micphone_buffer_time |      | 环形缓冲区长度时间，单位微妙 | 否       | 根据实际情况配置 | 0      |
+| micphone_nperiods    |      | 周期时间，单位微妙           | 否       | 根据实际情况配置 | 4      |
+| micphone_period_size |      | 音频包大小                   | 否       | 根据实际情况配置 | 512    |
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+cmd_word.json
 
-## Name
-Choose a self-explaining name for your project.
+此配置文件配置语音智能分析部分的唤醒词以及命令词，配置文件的第一项为唤醒词，后面的是命令词。默认配置文件配置如下：
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```
+{
+    "cmd_word": [
+        "精灵精灵",
+        "向前走",
+        "向后退",
+        "向左转",
+		"向右转",
+		"停止运动"
+    ]
+}
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+唤醒词以及命令词用户可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 运行
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+编译成功后，将生成的install路径拷贝到地平线X3开发板上（如果是在X3上编译，忽略拷贝步骤），并执行如下命令运行：
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### **Ubuntu**
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+运行方式1，使用ros2 run启动：
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```
+export COLCON_CURRENT_PREFIX=./install
+source ./install/setup.bash
+# config中为示例使用的模型，根据实际安装路径进行拷贝
+# 如果是板端编译（无--merge-install编译选项），拷贝命令为cp -r install/PKG_NAME/lib/PKG_NAME/config/ .，其中PKG_NAME为具体的package名。
+cp -r install/lib/hobot_audio/config/ .
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+# 加载音频驱动，设备启动只需要加载一次
+bash config/audio.sh
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+# 启动音频处理pkg
+ros2 run hobot_audio hobot_audio
 
-## License
-For open source projects, say how it is licensed.
+```
+运行方式2，使用launch文件启动：
+```
+export COLCON_CURRENT_PREFIX=./install
+source ./install/setup.bash
+# config中为示例使用的模型，根据实际安装路径进行拷贝
+# 如果是板端编译（无--merge-install编译选项），拷贝命令为cp -r install/PKG_NAME/lib/PKG_NAME/config/ .，其中PKG_NAME为具体的package名。
+cp -r install/lib/hobot_audio/config/ .
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+# 启动launch文件
+ros2 launch install/share/hobot_audio/launch/hobot_audio.launch.py
+
+```
+
+### **Linux**
+
+```
+export ROS_LOG_DIR=/userdata/
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./install/lib/
+
+# config中为示例使用的模型，根据实际安装路径进行拷贝
+cp -r install/lib/hobot_audio/config/ .
+
+# 加载音频驱动，设备启动只需要加载一次
+sh config/audio.sh
+
+# 启动音频处理pkg
+./install/lib/hobot_audio/hobot_audio
+
+```
+
+## 注意事项
+
+1. 用户若需要自定义唤醒词或者命令词，可以修改hobot_audio pkg的config文件夹下的cmd_word.json文件
+
+2. 本package封装的音频智能处理sdk主要针对与X3适配的线性四麦的麦克风，若用户更换麦克风硬件，可能需要自行适配音频驱动等，此外，算法处理效果也可能会有差异；若硬件有变化，可根据硬件通道数具体情况修改hobot_audio pkg的config文件夹下的audio_config.json配置文件，保证配置的麦克风通道数以及参考信息的通道信息等的正确性，从而确保输入音频智能处理sdk的音频数据的正确性。
+
+   
+
+# 结果分析
+
+## X3结果展示
+
+```
+alsa_device_init, snd_pcm_open. handle((nil)), name(hw:0,0), direct(1), mode(0)
+snd_pcm_open succeed. name(hw:0,0), handle(0x557d6e4d00)
+Rate set to 16000Hz (requested 16000Hz)
+Buffer size range from 16 to 20480
+Period size range from 16 to 10240
+Requested period size 512 frames
+Periods = 4
+was set period_size = 512
+was set buffer_size = 2048
+alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
+```
+
+以上log显示，音频alsa设备初始化成功，并且打开了音频设备，可正常采集音频。
+
+## web效果展示
+
+
+
+# 常见问题
+1、无法打开音频设备
+
+1.1 确认音频设备接线是否正常
+
+1.2 确实是否加载音频驱动
