@@ -2,9 +2,23 @@
 
 hobot_audio package是地平线机器人开发平台的一部分，通过阅读本文档，用户可以在地平线X3开发板上采集音频并且对音频进行AI智能处理，音频数据以及AI结果可以用于其他功能的开发。
 
-hobot_audio package源码包含audio_capture采集音频、audio_engine将原始采集到的音频数据送入horizon_speech_sdk做智能处理。horizon_speech_sdk是地平线智能语音处理sdk，内部封装了算法模型推理过程。sdk智能处理结果包括唤醒事件、命令词等信息，这些智能信息会通过hobot_audio package发布audio_msg::msg::SmartAudioData类型消息给用户使用，可用于唤醒设备之后进行设备控制等。
+hobot_audio package源码包含config、audio_capture、audio_engine、horizon_speech_sdk、config等几个部分。
 
-hobot_audio package内部使用的语音智能处理sdk是离线模式，不需要在线与云端通讯运行。
+config部分包括hobot_audio package运行所需的配置以及加载功能启动所需要运行的一些脚本。
+
+audio_capture主要用于采集原始音频，并且负责将智能语音处理之后的智能数据结果通过自定义的audio_msg::msg::SmartAudioData消息发布出去，供给用户订阅使用，可用于唤醒设备之后进行设备控制等。
+
+audio_engine部分将采集到的原始音频数据送入智能语音sdk做智能处理，内部包括智能语音sdk的初始化、启动、送音频数据给sdk处理、sdk的停止等，同时会将智能语音sdk处理后的智能语音数据回调给到audio_capture部分。
+
+horizon_speech_sdk部分主要包括地平线智能语音处理sdk的头文件以及库，内部封装了算法模型推理过程。sdk智能处理结果包括唤醒事件、命令词、声源定位的Doa等信息，这些智能信息会通过回调给到hobot_audio package处理并且发布audio_msg::msg::SmartAudioData类型消息。
+
+hobot_audio package发布的智能语音消息中的声源定位Doa信息单位为角度，取值范围：0度~180度。角度的相对位置关系与麦克风的安装位置强相关，计算示意图如下：
+
+![](./doa.png)
+
+即麦克风安装的正前方为90度，从麦克风1开始沿正前方到麦克风4的方向画半圆即为0度到180度的范围。
+
+hobot_audio package内部使用的语音智能处理sdk是离线模式，不需要在线与云端通讯。
 
 此Package的语音算法sdk适用于与X3适配的线性四麦的麦克风阵列。
 
@@ -17,7 +31,7 @@ hobot_audio package内部使用的语音智能处理sdk是离线模式，不需�
 - horizon_speech_sdk
 - audio_msg
 
-horizon_speech_sdk是地平线封装的对原始语音进行智能处理的sdk，内部封装了语音的算法处理部分，包括降噪、唤醒、语音VAD、ASR、Doa等处理，此package仅处理唤醒以及asr识别的命令词部分功能。
+horizon_speech_sdk是地平线封装的对原始语音进行智能处理的sdk，内部封装了语音的算法处理部分，包括降噪、唤醒、语音VAD、ASR、Doa等处理，此package仅处理唤醒以及ASR识别的命令词部分功能。
 
 audio_msg为自定义的智能音频帧消息格式，用于算法模型推理后，发布推理结果，audio_msg pkg定义在hobot_msgs中。
 
@@ -198,8 +212,9 @@ alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
 
 
 # 常见问题
-1、无法打开音频设备
+1、无法打开音频设备？
 
 1.1 确认音频设备接线是否正常
 
-1.2 确实是否加载音频驱动
+1.2 确认是否加载音频驱动
+
