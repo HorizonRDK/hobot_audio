@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "audio_capture/alsa_device.h"
+#include "untils/alsa_device.h"
 #include "audio_msg/msg/smart_audio_data.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -70,10 +70,12 @@ class HBAudioCapture : public rclcpp::Node {
   int micphone_buffer_time_ = 0;
   int micphone_nperiods_ = 4;
   int micphone_period_size_ = 512;
+  int voip_mode_ = 0;
 
   std::string config_path_ = "./config";
   std::string audio_pub_topic_name_ = "/audio_smart";
   std::ofstream audio_infile_;
+  std::ofstream audio_sdk_;
   bool save_audio = false;
 
   rclcpp::Publisher<audio_msg::msg::SmartAudioData>::SharedPtr

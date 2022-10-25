@@ -97,15 +97,22 @@ int HBAudioCapture::Init() {
                 std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioCmdDataFunc, this, std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioEventFunc, this, std::placeholders::_1),
-      micphone_chn_, config_path_);
+      micphone_chn_, config_path_, voip_mode_);
 
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "init success");
-  system("rm ./*.pcm -rf");
+  // system("rm ./*.pcm -rf");
   if (save_audio) {
     audio_infile_.open("./audio_in.pcm",
                        std::ios::app | std::ios::out | std::ios::binary);
+    audio_sdk_.open("./audio_voip.pcm",
+                    std::ios::app | std::ios::out | std::ios::binary);
   }
 
+
+
+  rclcpp::QoS qos(rclcpp::KeepLast(7));
+  qos.reliable();
+  qos.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
   msg_publisher_ = this->create_publisher<audio_msg::msg::SmartAudioData>(
       audio_pub_topic_name_, 10);
   is_init_ = true;
@@ -125,6 +132,9 @@ int HBAudioCapture::DeInit() {
   AudioEngine::Instance()->DeInit();
   if (audio_infile_.is_open()) {
     audio_infile_.close();
+  }
+  if (audio_sdk_.is_open()) {
+    audio_sdk_.close();
   }
   return 0;
 }
@@ -184,12 +194,15 @@ int HBAudioCapture::MicphoneGetThread() {
 }
 
 void HBAudioCapture::AudioDataFunc(char *buffer, int size) {
-  RCLCPP_DEBUG(rclcpp::get_logger("hobot_audio"), "audio data cb plugin");
+  RCLCPP_DEBUG(rclcpp::get_logger("hobot_audio"), "pub audio data, size:%d", size);
   audio_msg::msg::SmartAudioData::UniquePtr frame(
       new audio_msg::msg::SmartAudioData());
   frame->frame_type.value = frame->frame_type.SMART_AUDIO_TYPE_VOIP;
   frame->data.resize(size);
   memcpy(&frame->data[0], buffer, size);
+  if (save_audio && audio_sdk_.is_open()) {
+   audio_sdk_.write(buffer,size);
+  }
   msg_publisher_->publish(std::move(frame));
 }
 
@@ -286,6 +299,18 @@ int HBAudioCapture::ParseConfig(std::string config_file) {
       parse_line(line, micphone_period_size_);
       RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "micphone_period_size: %d",
                   micphone_period_size_);
+    }
+    if (line.find("\"voip_mode\"") != std::string::npos) {
+      parse_line(line, voip_mode_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "voip_mode: %d",
+                  voip_mode_);
+    }
+    if (line.find("\"save_audio\"") != std::string::npos) {
+      int save = 0;
+      parse_line(line, save);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "save_audio: %d",
+                  save);
+      save_audio = save;
     }
   }
   ifs.close();

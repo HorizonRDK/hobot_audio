@@ -58,8 +58,8 @@ link_directories(
 )
 
 add_executable(hobot_audio
+  src/untils/alsa_device.cpp
   src/audio_capture/hb_audio_capture.cpp
-  src/audio_capture/alsa_device.cpp
   src/audio_engine/audioengine.cpp
   src/audio_example.cpp
 )

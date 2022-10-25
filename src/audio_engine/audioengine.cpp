@@ -26,18 +26,17 @@ namespace audio {
 
 void VoipDataCallback(const void *cookie, const HrscCallbackData *data) {
   if (!data) return;
-  RCLCPP_INFO(rclcpp::get_logger("audio_capture"),
-              "recv hrsc sdk callback audio, angle:%f, score:%f, data size:%d",
-              data->angle, data->score, data->audio_buffer.size);
+  RCLCPP_DEBUG(rclcpp::get_logger("audio_capture"),
+               "recv hrsc sdk callback audio, angle:%f, score:%f, data size:%d",
+               data->angle, data->score, data->audio_buffer.size);
   if (AudioEngine::Instance()->GetAudioDataCb()) {
     AudioEngine::Instance()->GetAudioDataCb()(
         reinterpret_cast<char *>(data->audio_buffer.audio_data),  // nolint
         data->audio_buffer.size);
   }
-
-  if (AudioEngine::Instance()->GetAudioSmartDataCb()) {
-    AudioEngine::Instance()->GetAudioSmartDataCb()(data->angle);
-  }
+  // if (AudioEngine::Instance()->GetAudioSmartDataCb()) {
+  //   AudioEngine::Instance()->GetAudioSmartDataCb()(data->angle);
+  // }
 }
 
 void WakeupDataCallback(const void *cookie, const HrscCallbackData *data,
@@ -106,13 +105,15 @@ int AudioEngine::ParseConfig(std::string config_file) {
 
 int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
                       AudioCmdDataFunc cmd_cb, AudioEventFunc event_cb,
-                      const int mic_chn, const std::string config_path) {
+                      const int mic_chn, const std::string config_path,
+                      const int voip_mode) {
   if (init_) {
     RCLCPP_WARN(rclcpp::get_logger("audio_capture"),
                 "has already initialized.");
     return 0;
   }
   mic_chn_num_ = mic_chn;
+  voip_mode_ = voip_mode;
   std::string config_file = config_path + "/audio_config.json";
   sdk_file_path_ = config_path + "/hrsc";
   // ParseConfig(config_file);
@@ -134,7 +135,6 @@ int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
 int AudioEngine::DeInit() { return 0; }
 
 int AudioEngine::Start() {
-  // return 0;
   if (!init_) {
     RCLCPP_ERROR(rclcpp::get_logger("audio_capture"), "engine not init.");
     return -1;
@@ -167,7 +167,8 @@ int AudioEngine::Stop() {
 
 int AudioEngine::InitSDK() {
   input_cfg_.audio_channels = sdkin_chn_num_;
-  RCLCPP_WARN(rclcpp::get_logger("audio_capture"), "audioengine sdk in chn:%d", sdkin_chn_num_);
+  RCLCPP_WARN(rclcpp::get_logger("audio_capture"), "audioengine sdk in chn:%d",
+              sdkin_chn_num_);
   input_cfg_.sample_rate = 16000;
   input_cfg_.audio_format = kHrscAudioFormatPcm16Bit;
 
@@ -180,34 +181,38 @@ int AudioEngine::InitSDK() {
   effect_cfg_.priv = &effect_cfg_;
   effect_cfg_.asr_timeout = 5000;
   effect_cfg_.cfg_file_path = sdk_file_path_.c_str();
-  std::string cus_path = sdk_file_path_ + "/cmd_word.json";
-  RCLCPP_INFO(rclcpp::get_logger("audio_capture"),
-              "hrsc sdk file path:%s, cmd file:%s", sdk_file_path_.c_str(),
-              cus_path.c_str());
-  if (cus_path.empty()) {
-    effect_cfg_.custom_wakeup_word = nullptr;
-  } else {
-    std::fstream stream(cus_path, std::ios::in);
-    if (!stream.is_open()) {
+  if (!voip_mode_) {
+    std::string cus_path = sdk_file_path_ + "/cmd_word.json";
+    RCLCPP_INFO(rclcpp::get_logger("audio_capture"),
+                "hrsc sdk file path:%s, cmd file:%s", sdk_file_path_.c_str(),
+                cus_path.c_str());
+    if (cus_path.empty()) {
       effect_cfg_.custom_wakeup_word = nullptr;
     } else {
-      // get length of file:
-      stream.seekg(0, stream.end);
-      int length = stream.tellg();
-      stream.seekg(0, stream.beg);
-      char *buffer = new char[length + 1];
-      stream.read(buffer, length);
-      buffer[length] = '\0';
-      effect_cfg_.custom_wakeup_word = buffer;
-      stream.close();
-      // delete[] buffer;
-      std::cout << "hrsc sdk wakeup word is:" << std::endl
-                << effect_cfg_.custom_wakeup_word << std::endl;
+      std::fstream stream(cus_path, std::ios::in);
+      if (!stream.is_open()) {
+        effect_cfg_.custom_wakeup_word = nullptr;
+      } else {
+        // get length of file:
+        stream.seekg(0, stream.end);
+        int length = stream.tellg();
+        stream.seekg(0, stream.beg);
+        char *buffer = new char[length + 1];
+        stream.read(buffer, length);
+        buffer[length] = '\0';
+        effect_cfg_.custom_wakeup_word = buffer;
+        stream.close();
+        // delete[] buffer;
+        std::cout << "hrsc sdk wakeup word is:" << std::endl
+                  << effect_cfg_.custom_wakeup_word << std::endl;
+      }
     }
+  } else {
+    effect_cfg_.custom_wakeup_word = nullptr;
   }
 
   effect_cfg_.vad_timeout = 5000;
-  effect_cfg_.ref_ch_index = 10;
+  effect_cfg_.ref_ch_index = 6;
   effect_cfg_.target_score = 0;
   effect_cfg_.support_command_word = 0;
   effect_cfg_.wakeup_prefix = 200;
@@ -228,9 +233,14 @@ int AudioEngine::InitSDK() {
     return -1;
   }
 
-  int v = 0;
+  int value = 0;
+  if (voip_mode_) {
+    RCLCPP_WARN(rclcpp::get_logger("audio_capture"),
+                "audioengine sdk init on voip mode");
+    value = 1;
+  }
   HrscParamData data;
-  data.value = &v;
+  data.value = &value;
   data.param_type = kHrscParasTypeVoipDataSwitch;
   HrscSetParam(sdk_handle_, &data);
   RCLCPP_WARN(rclcpp::get_logger("audio_capture"), "hrsc start success!");
@@ -260,33 +270,47 @@ int AudioEngine::InputData(char *data, int len, bool end) {
   if (mic_chn_num_ == sdkin_chn_num_) {
     memcpy(adapter_buffer_, data, size);
   } else {
-    int chn_tmp = sdkin_chn_num_ << 1;
-    int data_wide = mic_chn_num_ << 1;
-    int count = len / mic_chn_num_ >> 1;
-    for (int i = 0; i < count; ++i) {
-      int k = 0;
-      for (int j = 0; j < chn_tmp; ++j) {
-        adapter_buffer_[chn_tmp * i + j] = data[data_wide * i + k];
-        ++k;
-        if (k >= data_wide) k = 0;
-      }
-#if 0
-      k = 0;
-      for (auto item : sdk_ref_chn_id_list_) {
-        if (k < ref_chn_id_list_.size()) {
-          adapter_buffer_[chn_tmp * i + (item * 2)] =
-              data[data_wide * i + ref_chn_id_list_[k] * 2];
-          adapter_buffer_[chn_tmp * i + (item * 2 + 1)] =
-              data[data_wide * i + (ref_chn_id_list_[k] * 2 + 1)];
-        } else {
-          adapter_buffer_[chn_tmp * i + (item * 2)] = 0;
-          adapter_buffer_[chn_tmp * i + (item * 2 + 1)] = 0;
-        }
-        k++;
-      }
-#endif
+    // 8通道数据->6通道数据，剔除5, 6通道，数据类型为s16
+    char *dst_ptr = adapter_buffer_;
+    char *src_ptr = data;
+    int frame_count = len / 16;
+    int index = 0;
+    while (index++ < frame_count) {
+      memcpy(dst_ptr, src_ptr, 4 * 2);
+      dst_ptr += 4 * 2;
+      src_ptr += 6 * 2;
+      memcpy(dst_ptr, src_ptr, 2 * 2);
+      dst_ptr += 2 * 2;
+      src_ptr += 2 * 2;
     }
+//     int chn_tmp = sdkin_chn_num_ << 1;
+//     int data_wide = mic_chn_num_ << 1;
+//     int count = len / mic_chn_num_ >> 1;
+//     for (int i = 0; i < count; ++i) {
+//       int k = 0;
+//       for (int j = 0; j < chn_tmp; ++j) {
+//         adapter_buffer_[chn_tmp * i + j] = data[data_wide * i + k];
+//         ++k;
+//         if (k >= data_wide) k = 0;
+//       }
+// #if 0
+//       k = 0;
+//       for (auto item : sdk_ref_chn_id_list_) {
+//         if (k < ref_chn_id_list_.size()) {
+//           adapter_buffer_[chn_tmp * i + (item * 2)] =
+//               data[data_wide * i + ref_chn_id_list_[k] * 2];
+//           adapter_buffer_[chn_tmp * i + (item * 2 + 1)] =
+//               data[data_wide * i + (ref_chn_id_list_[k] * 2 + 1)];
+//         } else {
+//           adapter_buffer_[chn_tmp * i + (item * 2)] = 0;
+//           adapter_buffer_[chn_tmp * i + (item * 2 + 1)] = 0;
+//         }
+//         k++;
+//       }
+// #endif
+//     }
   }
+
 
   HrscAudioBuffer hrsc_buffer;
   hrsc_buffer.audio_data = adapter_buffer_;

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "audio_capture/alsa_device.h"
+#include "untils/alsa_device.h"
 
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "audio_capture/utils.h"
+#include "untils/utils.h"
 
 /*
  * Definitions
@@ -453,10 +453,10 @@ int alsa_device_read(alsa_device_t *adev, void *buffer,
     fprintf(stderr, "%s overrun occurred\n", adev->name);
     xrun(adev->handle, SND_PCM_STREAM_CAPTURE);
   } else if (rc < 0) {
-    fprintf(stderr, "error from readi: %s\n", snd_strerror(rc));
+    fprintf(stderr, "%s error from readi: %d (%s)\n", adev->name, rc, snd_strerror(rc));
   } else {
     if (rc != static_cast<int>(frames)) {
-      fprintf(stderr, "short read, read %d frames\n", rc);
+      fprintf(stderr, "%s short read, read %d frames\n", adev->name, rc);
     }
   }
 
@@ -487,10 +487,10 @@ int alsa_device_write(alsa_device_t *adev, void *buffer,
     fprintf(stderr, "%s underrun occurred\n", adev->name);
     xrun(adev->handle, SND_PCM_STREAM_PLAYBACK);
   } else if (rc < 0) {
-    fprintf(stderr, "error from writei: %s\n", snd_strerror(rc));
+    fprintf(stderr, "%s error from writei: %d(%s)\n", adev->name, rc, snd_strerror(rc));
   } else {
     if (rc != static_cast<int>(frames)) {
-      fprintf(stderr, "short read, write %d frames\n", rc);
+      fprintf(stderr, "%s short read, write %d frames\n", adev->name, rc);
     }
   }
 
