@@ -26,7 +26,7 @@ hobot_audio package内部使用的语音智能处理sdk是离线模式，不需�
 
 
 
-hobot_audio package还包含输出降噪后的语音功能，此功能是否启用可以通过配置文件配置。需要注意的是，输出降噪语音功能与智能识别功能互斥，不同时支持。
+hobot_audio package还包含输出降噪后的语音功能，此功能是否启用可以通过配置文件配置。需要注意的是，输出降噪语音功能与智能识别功能互斥，不同时支持。当开启此功能时，hobot_audio package会通过发布audio_msg::msg::SmartAudioData类型消息将降噪后的音频消息发送出去供其他应用使用。
 
 
 
@@ -114,7 +114,7 @@ audio_config.json配置文件参数说明：
 | micphone_nperiods    | int  | 周期时间，单位微妙                                           | 否       | 根据实际情况配置 | 4      |
 | micphone_period_size | int  | 音频包大小                                                   | 否       | 根据实际情况配置 | 512    |
 | voip_mode            | int  | 是否是voip模式，若配置成voip模式，则发布降噪后的音频，并且不支持ASR识别功能。即音频降噪与ASR识别模式互斥。 | 是       | 0/1              | 0      |
-| save_audio           | int  | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。 | 否       | 0/1              | 0      |
+| save_audio           | int  | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。音频默认保存在程序运行当前目录。 | 否       | 0/1              | 0      |
 
 cmd_word.json
 

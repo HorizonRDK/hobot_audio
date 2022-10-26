@@ -212,7 +212,7 @@ int AudioEngine::InitSDK() {
   }
 
   effect_cfg_.vad_timeout = 5000;
-  effect_cfg_.ref_ch_index = 6;
+  effect_cfg_.ref_ch_index = 6;  // 参考信号通道index
   effect_cfg_.target_score = 0;
   effect_cfg_.support_command_word = 0;
   effect_cfg_.wakeup_prefix = 200;
@@ -270,7 +270,7 @@ int AudioEngine::InputData(char *data, int len, bool end) {
   if (mic_chn_num_ == sdkin_chn_num_) {
     memcpy(adapter_buffer_, data, size);
   } else {
-    // 8通道数据->6通道数据，剔除5, 6通道，数据类型为s16
+    // 8通道数据->6通道数据，因X3Pi麦克风8mic，参考信号为7,8通道，剔除5, 6通道，数据类型为s16
     char *dst_ptr = adapter_buffer_;
     char *src_ptr = data;
     int frame_count = len / 16;
