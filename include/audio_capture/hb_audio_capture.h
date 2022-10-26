@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "untils/alsa_device.h"
+#include "utils/alsa_device.h"
 #include "audio_msg/msg/smart_audio_data.hpp"
 #include "rclcpp/rclcpp.hpp"
 

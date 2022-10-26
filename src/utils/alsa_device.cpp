@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "untils/alsa_device.h"
+#include "utils/alsa_device.h"
 
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "untils/utils.h"
+#include "utils/utils.h"
 
 /*
  * Definitions
