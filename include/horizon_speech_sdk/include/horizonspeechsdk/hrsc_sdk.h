@@ -93,9 +93,11 @@ typedef struct {
  * SDK AUDIO CONFIG
  */
 typedef struct {
-  unsigned int sample_rate;     // sample rate
-  unsigned int audio_channels;  // channel
-  HrscAudioFormat audio_format; // sample bits
+  unsigned int sample_rate;           // sample rate
+  unsigned int play_sample_rate;     // sample rate
+  unsigned int audio_channels;        // channel
+  unsigned int play_channels;        // channel
+  HrscAudioFormat audio_format;       // sample bits
 } HrscAudioConfig;
 
 /**
@@ -261,6 +263,8 @@ int HrscStart(void *handle);
  */
 int HrscProcess(void *handle, HrscAudioBuffer *buffer);
 
+int HrscPlayProcess(void *handle, HrscAudioBuffer *buffer, HrscAudioBuffer *out_buffer);
+
 /**
  * @brief get the sdk running status
  * @param handle: speech handle, get from HrscInit
@@ -308,7 +312,7 @@ int HrscStop(void *handle);
 int HrscRelease(void **handle);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif //__HRSC_SDK_H__

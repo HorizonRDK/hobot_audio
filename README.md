@@ -2,11 +2,13 @@
 
 hobot_audio package是地平线机器人开发平台的一部分，通过阅读本文档，用户可以在地平线X3开发板上采集音频并且对音频进行AI智能处理，音频数据以及AI结果可以用于其他功能的开发。
 
-hobot_audio package源码包含config、audio_capture、audio_engine、horizon_speech_sdk、config等几个部分。
+hobot_audio package源码包含config、audio_capture、audio_engine、horizon_speech_sdk、audio_speaker、config等几个部分。
 
 config部分包括hobot_audio package运行所需的配置以及加载功能启动所需要运行的一些脚本。
 
 audio_capture主要用于采集原始音频，并且负责将智能语音处理之后的智能数据结果通过自定义的audio_msg::msg::SmartAudioData消息发布出去，供给用户订阅使用，可用于唤醒设备之后进行设备控制等。
+
+audio_speaker负责接收其他模块（如网络或者uac通道）发布的audio_msg::msg::AudioFrame消息，即语音数据，接收之后通过算法SDK优化音频效果并且通过X3音频板的播放器进行播放。
 
 audio_engine部分将采集到的原始音频数据送入智能语音sdk做智能处理，内部包括智能语音sdk的初始化、启动、送音频数据给sdk处理、sdk的停止等，同时会将智能语音sdk处理后的智能语音数据回调给到audio_capture部分。
 
@@ -40,7 +42,9 @@ hobot_audio package还包含输出降噪后的语音功能，此功能是否启�
 
 horizon_speech_sdk是地平线封装的对原始语音进行智能处理的sdk，内部封装了语音的算法处理部分，包括降噪、唤醒、语音VAD、ASR、Doa等处理，此package仅处理唤醒以及ASR识别的命令词部分功能。
 
-audio_msg为自定义的智能音频帧消息格式，用于算法模型推理后，发布推理结果，audio_msg pkg定义在hobot_msgs中。
+audio_msg为自定义的音频帧消息格式，包括原始的语音数据以及智能语音数据。原始语音数据为单纯的音频帧，智能语音数据包括降噪后的语音数据和算法模型推理后发布的推理结果，包括识别结果或者声源定位的Doa角度等，audio_msg pkg定义在hobot_msgs中。
+
+
 
 ## 开发环境
 
@@ -196,6 +200,8 @@ sh config/audio.sh
 2. 本package封装的音频智能处理sdk主要针对与X3适配的线性四麦的麦克风，若用户更换麦克风硬件，可能需要自行适配音频驱动等，此外，算法处理效果也可能会有差异；若硬件有变化，可根据硬件通道数具体情况修改hobot_audio pkg的config文件夹下的audio_config.json配置文件，保证配置的麦克风通道数以及参考信息的通道信息等的正确性，从而确保输入音频智能处理sdk的音频数据的正确性。
 
 3. 配置文件audio_config.json中voip模式使能与否直接影响是否开启音频降噪功能，与语音识别ASR功能互斥。
+
+4. 默认开启接收语音并且播放的功能。
 
    
 

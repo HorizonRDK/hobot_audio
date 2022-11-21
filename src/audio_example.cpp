@@ -16,6 +16,7 @@
 #include <string>
 
 #include "audio_capture/hb_audio_capture.h"
+#include "audio_speaker/audio_recver.h"
 #include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char** argv) {
@@ -24,9 +25,11 @@ int main(int argc, char** argv) {
               "This is audio capture example!");
 
   std::string node_name = "audio_capture";
-  hobot::audio::HBAudioCapture audio_capture(node_name);
-  if (audio_capture.Init() == 0) {
-    if (audio_capture.Run() != 0) {
+  
+  std::shared_ptr<hobot::audio::HBAudioCapture> audio_capture = 
+     std::make_shared<hobot::audio::HBAudioCapture>("audio_capture");
+  if (audio_capture->Init() == 0) {
+    if (audio_capture->Run() != 0) {
       RCLCPP_ERROR(rclcpp::get_logger("audio_capture"),
                    "Run HBAudioCapture failed!");
     } else {
@@ -37,7 +40,29 @@ int main(int argc, char** argv) {
     RCLCPP_ERROR(rclcpp::get_logger("audio_capture"),
                  "Init HBAudioCapture failed!");
   }
+  
+  std::shared_ptr<hobot::audio::AudioRecver> audio_recver = 
+     std::make_shared<hobot::audio::AudioRecver>("audio_recver");
+  if (audio_recver->Init() == 0) {
+    if (audio_recver->Run() != 0) {
+      RCLCPP_ERROR(rclcpp::get_logger("audio_recver"),
+                   "Run AudioRecver failed!");
+    } else {
+      RCLCPP_INFO(rclcpp::get_logger("audio_recver"),
+                  "Run AudioRecver done!");
+    }
+  } else {
+    RCLCPP_ERROR(rclcpp::get_logger("audio_recver"),
+                 "Init AudioRecver failed!");
+  }
 
+  //  std::vector<std::shared_ptr<rclcpp::Node>> node_ptrs;
+  //  node_ptrs.push_back(audio_capture);
+  //  node_ptrs.push_back(audio_recver);
+  rclcpp::executors::SingleThreadedExecutor exec;
+  exec.add_node(audio_capture);
+  exec.add_node(audio_recver);
+  exec.spin();
   rclcpp::shutdown();
   return 0;
 }

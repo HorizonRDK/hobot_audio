@@ -80,6 +80,7 @@ class HBAudioCapture : public rclcpp::Node {
 
   rclcpp::Publisher<audio_msg::msg::SmartAudioData>::SharedPtr
   msg_publisher_ = nullptr;
+  std::shared_ptr<std::thread> capture_task_;
 };
 
 }  // namespace audio

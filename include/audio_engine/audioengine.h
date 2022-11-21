@@ -52,10 +52,13 @@ class AudioEngine {
            const std::string config_path = "",
            const int voip_mode = 0);
   int DeInit();
-  int InputData(char *data, int len, bool end);
+  bool IsInit() {return init_;}
   int Start();
   int Stop();
   int Reset();
+  int InputData(char *data, int len, bool end);  
+  // processs audio data, optimize sound effects
+  int ProcessData(char* in_data, const int in_len, char*& out_data, int& out_len);
 
  public:
   AudioDataFunc GetAudioDataCb() { return audio_cb_; }
@@ -100,6 +103,10 @@ class AudioEngine {
 
   char *adapter_buffer_ = nullptr;
   int audio_size_ = 0;
+
+  char* out_buffer_ = nullptr;
+  int out_len_ = 0;
+  std::ofstream audio_out_;
 };
 
 }  // namespace audio

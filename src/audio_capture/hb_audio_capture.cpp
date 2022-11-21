@@ -123,6 +123,10 @@ int HBAudioCapture::DeInit() {
   RCLCPP_INFO(rclcpp::get_logger("hobot_audio"), "deinit");
   if (!is_init_) return 0;
   if (!micphone_device_) return -1;
+  if (capture_task_ && capture_task_->joinable()) {
+    capture_task_->join();
+    capture_task_ = nullptr;
+  }
   if (micphone_device_) {
     alsa_device_deinit(micphone_device_);
     alsa_device_free(micphone_device_);
@@ -146,14 +150,15 @@ int HBAudioCapture::Run() {
   }
 
   AudioEngine::Instance()->Start();
-  rclcpp::executors::SingleThreadedExecutor exec;
-  auto capture_task = std::make_shared<std::thread>(
-      std::bind(&HBAudioCapture::MicphoneGetThread, this));
-  exec.spin();
-  if (capture_task && capture_task->joinable()) {
-    capture_task.reset();
-  }
-  exec.spin();
+  // rclcpp::executors::SingleThreadedExecutor exec;
+  // auto capture_task = std::make_shared<std::thread>(
+  //     std::bind(&HBAudioCapture::MicphoneGetThread, this));
+  // exec.spin();
+  // if (capture_task && capture_task->joinable()) {
+  //   capture_task.reset();
+  // }
+  // exec.spin();
+  capture_task_ = std::make_shared<std::thread>(&HBAudioCapture::MicphoneGetThread, this);
   return 0;
 }
 

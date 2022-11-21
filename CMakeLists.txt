@@ -61,12 +61,15 @@ add_executable(hobot_audio
   src/utils/alsa_device.cpp
   src/audio_capture/hb_audio_capture.cpp
   src/audio_engine/audioengine.cpp
+  src/audio_speaker/audio_recver_node.cpp
+  src/audio_speaker/audio_speaker.cpp
+  src/audio_speaker/audio_recver.cpp
   src/audio_example.cpp
 )
 
 set(BASE_LIBRARIES pthread dl rt m)
 set(X3_HAPI_LIB  hbmedia cam isp vio multimedia iar)
-set(X3_AUDIO_LIB asound dynamicwfst log_manage cnn_intf ion hisf hrsc)
+set(X3_AUDIO_LIB asound dynamicwfst log_manage cnn_intf ion avdevice hisf hrsc muduo_net muduo_http muduo_inspect muduo_base)
 
 target_link_libraries(${PROJECT_NAME}
    ${X3_AUDIO_LIB} ${X3_HAPI_LIB} ${BASE_LIBRARIES}

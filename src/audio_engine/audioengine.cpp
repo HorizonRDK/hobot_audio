@@ -76,6 +76,7 @@ AudioEngine::AudioEngine() {}
 
 AudioEngine::~AudioEngine() {
   if (adapter_buffer_) delete[] adapter_buffer_;
+  if (out_buffer_) delete[] out_buffer_;
 }
 
 int AudioEngine::ParseConfig(std::string config_file) {
@@ -320,6 +321,33 @@ int AudioEngine::InputData(char *data, int len, bool end) {
     audio_inconvert_file_.write(adapter_buffer_, audio_size_);
   }
   return 0;
+}
+
+int AudioEngine::ProcessData(char* in_data,
+  const int in_len, char*& out_data, int& out_len) {
+  if(!out_buffer_){
+    out_buffer_ = new char[in_len];
+    memset(out_buffer_, 0, in_len);
+    out_len_ = in_len;
+  }
+
+  HrscAudioBuffer hrsc_buffer;
+  hrsc_buffer.audio_data = in_data;
+  hrsc_buffer.size = in_len;
+  HrscAudioBuffer hrsc_out_buffer;
+  hrsc_out_buffer.audio_data = out_buffer_;
+  hrsc_out_buffer.size = out_len_;
+  int ret = HrscPlayProcess(sdk_handle_, &hrsc_buffer, &hrsc_out_buffer);
+  if (ret != HRSC_CODE_SUCCESS) {
+    RCLCPP_ERROR(rclcpp::get_logger("audio_capture"), "HrscPlayProcess is failed!");
+  }
+  if(out_len < in_len) {
+    delete[] out_data;
+    out_data = new char[in_len];
+    memset(out_data, 0, in_len);
+  }
+  memcpy(out_data, hrsc_out_buffer.audio_data, hrsc_out_buffer.size);
+  return ret;
 }
 
 void AudioEngine::DeInitSDK() {
