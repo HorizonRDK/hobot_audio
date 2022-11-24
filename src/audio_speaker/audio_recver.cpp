@@ -123,14 +123,6 @@ int AudioRecver::Run() {
     return -1;
   }
 
-  // rclcpp::executors::SingleThreadedExecutor exec;
-  // auto play_task = std::make_shared<std::thread>(
-  //     std::bind(&AudioRecver::PlayAudio, this));
-  // exec.spin();
-  // if (play_task && play_task->joinable()) {
-  //   play_task.reset();
-  // }
-  // exec.spin();
   play_task_ = std::make_shared<std::thread>(&AudioRecver::PlayAudio, this);
   return 0;
 }

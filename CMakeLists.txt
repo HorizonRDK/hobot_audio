@@ -61,7 +61,6 @@ add_executable(hobot_audio
   src/utils/alsa_device.cpp
   src/audio_capture/hb_audio_capture.cpp
   src/audio_engine/audioengine.cpp
-  src/audio_speaker/audio_recver_node.cpp
   src/audio_speaker/audio_speaker.cpp
   src/audio_speaker/audio_recver.cpp
   src/audio_example.cpp
