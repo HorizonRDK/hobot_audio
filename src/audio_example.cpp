@@ -21,6 +21,9 @@
 #include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char** argv) {
+  rclcpp::init(argc, argv);
+  RCLCPP_WARN(rclcpp::get_logger("audio_capture"),
+              "This is audio capture example!");
   std::shared_ptr<hobot::audio::HBAudioCapture> audio_capture = 
      std::make_shared<hobot::audio::HBAudioCapture>("audio_capture");
   if (audio_capture->Init() == 0) {
