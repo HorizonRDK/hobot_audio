@@ -116,9 +116,6 @@ int HBAudioCapture::Init() {
                     std::ios::app | std::ios::out | std::ios::binary);
   }
 
-  rclcpp::QoS qos(rclcpp::KeepLast(7));
-  qos.reliable();
-  qos.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
   msg_publisher_ = this->create_publisher<audio_msg::msg::SmartAudioData>(
       audio_pub_topic_name_, 10);
   is_init_ = true;

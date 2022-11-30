@@ -75,10 +75,7 @@ int AudioRecver::Init() {
     audio_buffer_ = new char[audio_len_];
     memset(audio_buffer_, 0, audio_len_);
   }
-  
-  rclcpp::QoS qos(rclcpp::KeepLast(7));
-  qos.reliable();
-  qos.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+
   audio_subscription_ =
       this->create_subscription<audio_msg::msg::AudioFrame>(
           audio_msg_sub_topic_name_, 10,
@@ -140,7 +137,7 @@ void AudioRecver::RecvAudio(
     has_recv_ = true;
   }
   std::unique_lock<std::mutex> lg(queue_mtx_);
-  audio_queue_.emplace(msg);
+  audio_queue_.push(msg);
   if (audio_queue_.size() > queue_len_limit_) {
     RCLCPP_WARN(rclcpp::get_logger("AudioRecver"),
                 "smart queue len exceed limit: %d", queue_len_limit_);
@@ -150,7 +147,6 @@ void AudioRecver::RecvAudio(
     audio_recv_.write((char*)msg->data.data(), msg->data.size());
   }
   audio_queue_cv_.notify_all();
-  lg.unlock();
 }
 
 int AudioRecver::PlayAudio() {
@@ -163,7 +159,7 @@ int AudioRecver::PlayAudio() {
     if (audio_queue_.empty() || !rclcpp::ok()) {
       continue;
     }
-    auto audio_frame = std::move(audio_queue_.front());
+    auto audio_frame = audio_queue_.front();
     audio_queue_.pop();
     lg.unlock();
  
@@ -178,12 +174,12 @@ int AudioRecver::PlayAudio() {
       }
       continue;
     }
-    
+
     // audio sdk is running
-    ret = AudioEngine::Instance()->ProcessData((char *)audio_frame->data.data(),
-                                               audio_frame->data.size(),
-                                               audio_buffer_, audio_len_);
-    if (ret != 0) {
+    ret = AudioEngine::Instance()->ProcessData(
+        (char *)(audio_frame->data.data()), audio_frame->data.size(),
+        audio_buffer_, audio_len_);
+    if (ret != 0 || audio_len_ <= 0) {
       continue;
     }
 

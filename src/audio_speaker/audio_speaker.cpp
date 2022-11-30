@@ -87,9 +87,7 @@ int HBAudioSpeaker::DeInit() {
 }
 
 int HBAudioSpeaker::PlayAudio(char *data, const int len) {
-  snd_pcm_sframes_t frames;
-  frames = speaker_device_->period_size;
-  int size = snd_pcm_frames_to_bytes(speaker_device_->handle, frames);
+  snd_pcm_sframes_t frames = snd_pcm_bytes_to_frames(speaker_device_->handle, len);
   return alsa_device_write(speaker_device_, data, frames);
 }
 

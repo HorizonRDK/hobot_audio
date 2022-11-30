@@ -104,8 +104,6 @@ class AudioEngine {
   char *adapter_buffer_ = nullptr;
   int audio_size_ = 0;
 
-  char* out_buffer_ = nullptr;
-  int out_len_ = 0;
   std::ofstream audio_out_;
 };
 
