@@ -171,6 +171,8 @@ int AudioEngine::InitSDK() {
               sdkin_chn_num_);
   input_cfg_.sample_rate = 16000;
   input_cfg_.audio_format = kHrscAudioFormatPcm16Bit;
+  input_cfg_.play_sample_rate = 16000;
+  input_cfg_.play_channels = 1;
 
   output_cfg_.audio_channels = 1;
   output_cfg_.sample_rate = 16000;
