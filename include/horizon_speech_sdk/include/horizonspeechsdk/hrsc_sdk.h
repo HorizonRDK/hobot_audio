@@ -178,6 +178,10 @@ typedef struct {
    */
   const char *device_unique_str;
   /**
+   * @brief: the flag of using linear or cir mic
+   */
+  unsigned int is_use_linear_mic_flag;
+  /**
    * @brief notify user when a new event happen
    * @param cookie, hrsc_effect_config_t->priv
    * @param event, see hrsc_event_t

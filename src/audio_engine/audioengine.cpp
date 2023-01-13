@@ -106,7 +106,7 @@ int AudioEngine::ParseConfig(std::string config_file) {
 int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
                       AudioCmdDataFunc cmd_cb, AudioEventFunc event_cb,
                       const int mic_chn, const std::string config_path,
-                      const int voip_mode) {
+                      const int voip_mode, const int mic_type) {
   if (init_) {
     RCLCPP_WARN(rclcpp::get_logger("audio_capture"),
                 "has already initialized.");
@@ -114,6 +114,7 @@ int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
   }
   mic_chn_num_ = mic_chn;
   voip_mode_ = voip_mode;
+  mic_type_ = mic_type;
   std::string config_file = config_path + "/audio_config.json";
   sdk_file_path_ = config_path + "/hrsc";
   // ParseConfig(config_file);
@@ -217,6 +218,7 @@ int AudioEngine::InitSDK() {
   effect_cfg_.support_command_word = 0;
   effect_cfg_.wakeup_prefix = 200;
   effect_cfg_.wakeup_suffix = 200;
+  effect_cfg_.is_use_linear_mic_flag = mic_type_;
   effect_cfg_.HrscVoipDataCallback = VoipDataCallback;
   effect_cfg_.HrscWakeupDataCallback = WakeupDataCallback;
   effect_cfg_.HrscEventCallback = EventCallback;
