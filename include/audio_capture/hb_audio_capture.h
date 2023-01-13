@@ -71,12 +71,13 @@ class HBAudioCapture : public rclcpp::Node {
   int micphone_nperiods_ = 4;
   int micphone_period_size_ = 512;
   int voip_mode_ = 0;
+  int mic_type_ = 0;
 
   std::string config_path_ = "./config";
   std::string audio_pub_topic_name_ = "/audio_smart";
   std::ofstream audio_infile_;
   std::ofstream audio_sdk_;
-  bool save_audio = false;
+  bool save_audio_ = false;
 
   rclcpp::Publisher<audio_msg::msg::SmartAudioData>::SharedPtr
   msg_publisher_ = nullptr;

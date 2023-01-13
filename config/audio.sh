@@ -1,3 +1,4 @@
+#!/bin/bash
 mount -o,remount rw /
 echo 8 >/proc/sys/kernel/printk
 echo 112 >/sys/class/gpio/export

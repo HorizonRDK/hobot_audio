@@ -97,11 +97,11 @@ int HBAudioCapture::Init() {
                 std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioCmdDataFunc, this, std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioEventFunc, this, std::placeholders::_1),
-      micphone_chn_, config_path_, voip_mode_);
+      micphone_chn_, config_path_, voip_mode_, mic_type_);
 
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "init success");
   // system("rm ./*.pcm -rf");
-  if (save_audio) {
+  if (save_audio_) {
     audio_infile_.open("./audio_in.pcm",
                        std::ios::app | std::ios::out | std::ios::binary);
     audio_sdk_.open("./audio_voip.pcm",
@@ -184,7 +184,7 @@ int HBAudioCapture::MicphoneGetThread() {
     //         std::chrono::high_resolution_clock::now().time_since_epoch())
     //         .count();
     AudioEngine::Instance()->InputData(buffer, size, false);
-    if (save_audio && audio_infile_.is_open()) {
+    if (save_audio_ && audio_infile_.is_open()) {
       audio_infile_.write(buffer, size);
     }
   }
@@ -200,7 +200,7 @@ void HBAudioCapture::AudioDataFunc(char *buffer, int size) {
   frame->frame_type.value = frame->frame_type.SMART_AUDIO_TYPE_VOIP;
   frame->data.resize(size);
   memcpy(&frame->data[0], buffer, size);
-  if (save_audio && audio_sdk_.is_open()) {
+  if (save_audio_ && audio_sdk_.is_open()) {
    audio_sdk_.write(buffer,size);
   }
   msg_publisher_->publish(std::move(frame));
@@ -305,12 +305,17 @@ int HBAudioCapture::ParseConfig(std::string config_file) {
       RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "voip_mode: %d",
                   voip_mode_);
     }
+    if (line.find("\"mic_type\"") != std::string::npos) {
+      parse_line(line, mic_type_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "mic_type: %d",
+                  mic_type_);
+    }
     if (line.find("\"save_audio\"") != std::string::npos) {
       int save = 0;
       parse_line(line, save);
       RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "save_audio: %d",
                   save);
-      save_audio = save;
+      save_audio_ = save;
     }
   }
   ifs.close();

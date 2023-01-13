@@ -50,7 +50,8 @@ class AudioEngine {
            AudioCmdDataFunc cmd_cb, AudioEventFunc event_cb,
            const int mic_chn,
            const std::string config_path = "",
-           const int voip_mode = 0);
+           const int voip_mode = 0,
+           const int mic_type = 0);
   int DeInit();
   int InputData(char *data, int len, bool end);
   int Start();
@@ -79,6 +80,7 @@ class AudioEngine {
   std::string sdk_config_file_;
 
   int voip_mode_ = 0;
+  int mic_type_ = 0;
   HrscAudioConfig input_cfg_;
   HrscAudioConfig output_cfg_;
   HrscEffectConfig effect_cfg_;
