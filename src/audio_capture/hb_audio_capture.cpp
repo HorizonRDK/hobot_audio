@@ -28,32 +28,20 @@ HBAudioCapture::HBAudioCapture(const std::string &node_name,
   this->declare_parameter<std::string>("config_path", config_path_);
   this->declare_parameter<std::string>("audio_pub_topic_name",
                                        audio_pub_topic_name_);
+  this->declare_parameter<std::string>("asr_pub_topic_name",
+                                       asr_pub_topic_name_);
 
   this->get_parameter<std::string>("config_path", config_path_);
   this->get_parameter<std::string>("audio_pub_topic_name",
                                    audio_pub_topic_name_);
+  this->get_parameter<std::string>("asr_pub_topic_name",
+                                   asr_pub_topic_name_);
+
   std::stringstream ss;
   ss << "Parameter:"
      << "\n config_path: " << config_path_
-     << "\n audio_pub_topic_name: " << audio_pub_topic_name_;
-  RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "%s", ss.str().c_str());
-}
-
-HBAudioCapture::HBAudioCapture(const std::string &node_name,
-                               const std::string &namespace_,
-                               const NodeOptions &options)
-    : rclcpp::Node(node_name, namespace_, options) {
-  this->declare_parameter<std::string>("config_path", config_path_);
-  this->declare_parameter<std::string>("audio_pub_topic_name",
-                                       audio_pub_topic_name_);
-
-  this->get_parameter<std::string>("config_path", config_path_);
-  this->get_parameter<std::string>("audio_pub_topic_name",
-                                   audio_pub_topic_name_);
-  std::stringstream ss;
-  ss << "Parameter:"
-     << "\n config_path: " << config_path_
-     << "\n audio_pub_topic_name: " << audio_pub_topic_name_;
+     << "\n audio_pub_topic_name: " << audio_pub_topic_name_
+     << "\n asr_pub_topic_name: " << asr_pub_topic_name_;
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "%s", ss.str().c_str());
 }
 
@@ -97,7 +85,9 @@ int HBAudioCapture::Init() {
                 std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioCmdDataFunc, this, std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioEventFunc, this, std::placeholders::_1),
-      micphone_chn_, config_path_, voip_mode_, mic_type_);
+      std::bind(&HBAudioCapture::AudioASRDataFunc, this, std::placeholders::_1),
+      micphone_chn_, config_path_, voip_mode_, mic_type_,
+      asr_output_mode_, asr_output_channel_);
 
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "init success");
   // system("rm ./*.pcm -rf");
@@ -108,13 +98,12 @@ int HBAudioCapture::Init() {
                     std::ios::app | std::ios::out | std::ios::binary);
   }
 
-
-
-  rclcpp::QoS qos(rclcpp::KeepLast(7));
-  qos.reliable();
-  qos.durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
   msg_publisher_ = this->create_publisher<audio_msg::msg::SmartAudioData>(
       audio_pub_topic_name_, 10);
+  
+  if (asr_output_mode_ == 1 || asr_output_mode_ == 2) {
+    asr_msg_publisher_ = this->create_publisher<std_msgs::msg::String>(asr_pub_topic_name_, 10);
+  }
   is_init_ = true;
   return 0;
 }
@@ -250,6 +239,15 @@ void HBAudioCapture::AudioEventFunc(int event) {
   msg_publisher_->publish(std::move(frame));
 }
 
+void HBAudioCapture::AudioASRDataFunc(const char *asr) {
+  RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "asr result:%s", asr);
+  if (asr_output_mode_ == 1 || asr_output_mode_ == 2) {
+    auto message = std::make_unique<std_msgs::msg::String>();
+    message->data = asr;
+    asr_msg_publisher_->publish(std::move(message));
+  }
+}
+
 int HBAudioCapture::ParseConfig(std::string config_file) {
   if (config_file.empty()) return -1;
   RCLCPP_INFO(rclcpp::get_logger("hobot_audio"), "hobot audio config file:%s",
@@ -309,6 +307,16 @@ int HBAudioCapture::ParseConfig(std::string config_file) {
       parse_line(line, mic_type_);
       RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "mic_type: %d",
                   mic_type_);
+    }
+    if (line.find("\"asr_mode\"") != std::string::npos) {
+      parse_line(line, asr_output_mode_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "asr_mode: %d",
+                  asr_output_mode_);
+    }
+    if (line.find("\"asr_channel\"") != std::string::npos) {
+      parse_line(line, asr_output_channel_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "asr_channel: %d",
+                  asr_output_channel_);
     }
     if (line.find("\"save_audio\"") != std::string::npos) {
       int save = 0;

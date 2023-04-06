@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>audio_msg</depend>
   <depend>ament_cmake_gtest</depend>
 
   <test_depend>ament_lint_auto</test_depend>

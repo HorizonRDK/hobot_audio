@@ -34,12 +34,7 @@ hobot_audio package内部使用的语音智能处理sdk是离线模式，不需�
 
 此Package的语音算法sdk适用于与X3适配的线形四麦和环形四麦阵列。
 
-
-
 hobot_audio package还包含输出降噪后的语音功能，此功能是否启用可以通过配置文件配置。需要注意的是，输出降噪语音功能与智能识别功能互斥，不同时支持。当开启此功能时，hobot_audio package会通过发布audio_msg::msg::SmartAudioData类型消息将降噪后的音频消息发送出去供其他应用使用。
-
-
-
 
 # 编译
 
@@ -65,7 +60,7 @@ audio_msg为自定义的智能音频帧消息格式，用于算法模型推理�
 
 ### Ubuntu板端编译
 
-1. 编译环境确认 
+1. 编译环境确认
    - 板端已安装X3 Ubuntu系统。
    - 当前编译终端已设置TogetherROS环境变量：`source PATH/setup.bash`。其中PATH为TogetherROS的安装路径。
    - 已安装ROS2编译工具colcon，安装命令：`pip install -U colcon-common-extensions`
@@ -83,7 +78,7 @@ audio_msg为自定义的智能音频帧消息格式，用于算法模型推理�
 
    - 编译命令：
 
-```
+```shell
 export TARGET_ARCH=aarch64
 export TARGET_TRIPLE=aarch64-linux-gnu
 export CROSS_COMPILE=/usr/bin/$TARGET_TRIPLE-
@@ -100,8 +95,6 @@ colcon build --packages-select hobot_audio \
 
 编译需要依赖horizon_speech_sdk以及其依赖的算法库。horizon_speech_sdk 以及算法推理库由地平线编译好提供，目前已包括在hobot_audio package里面。
 
-
-
 # 使用介绍
 
 ## 依赖
@@ -112,6 +105,7 @@ colcon build --packages-select hobot_audio \
 | -------------------- | ----------- | ------------------ | -------- | ---------------- | ------------ |
 | config_path          | std::string | 配置文件路径       | 否       | 根据实际情况配置 | ./config     |
 | audio_pub_topic_name | std::string | 音频智能帧发布话题 | 否       | 根据实际情况配置 | /audio_smart |
+| asr_pub_topic_name   | std::string | ASR结果发布话题    | 否       | 根据实际情况配置 | /audio_asr |
 
 audio_config.json配置文件参数说明：
 
@@ -125,13 +119,15 @@ audio_config.json配置文件参数说明：
 | micphone_period_size | int  | 音频包大小                                                   | 否       | 根据实际情况配置 | 512    |
 | voip_mode            | int  | 是否是voip模式，若配置成voip模式，则发布降噪后的音频，并且不支持ASR识别功能。即音频降噪与ASR识别模式互斥。 | 是       | 0/1              | 0      |
 | mic_type             | int  | 麦克风阵列类型 | 否       | 0/1，0：环形麦克风阵列，1：线形麦克风阵列             | 0      |
+| asr_mode             | int  | asr模式 | 否       | 0/1/2，0: 不输出asr结果， 1: 唤醒后才输出asr， 2: 一直开启asr输出  | 0      |
+| asr_channel          | int  | asr通道选择 | 否       | 0/1/2/3，当asr_mode为2时，选择输出具体通道的ars结果            | 3      |
 | save_audio           | int  | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。音频默认保存在程序运行当前目录。 | 否       | 0/1              | 0      |
 
 cmd_word.json
 
 此配置文件配置语音智能分析部分的唤醒词以及命令词，配置文件的第一项为唤醒词，后面的是命令词。默认配置文件配置如下：
 
-```
+```json
 {
     "cmd_word": [
         "地平线你好",
@@ -146,8 +142,6 @@ cmd_word.json
 
 唤醒词以及命令词用户可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
 
-
-
 ## 运行
 
 编译成功后，将生成的install路径拷贝到地平线X3开发板上（如果是在X3上编译，忽略拷贝步骤），并执行如下命令运行：
@@ -156,7 +150,7 @@ cmd_word.json
 
 运行方式1，使用ros2 run启动：
 
-```
+```shell
 export COLCON_CURRENT_PREFIX=./install
 source ./install/setup.bash
 # config中为示例使用的模型，根据实际安装路径进行拷贝
@@ -170,8 +164,10 @@ bash config/audio.sh
 ros2 run hobot_audio hobot_audio
 
 ```
+
 运行方式2，使用launch文件启动：
-```
+
+```shell
 export COLCON_CURRENT_PREFIX=./install
 source ./install/setup.bash
 # config中为示例使用的模型，根据实际安装路径进行拷贝
@@ -185,7 +181,7 @@ ros2 launch install/share/hobot_audio/launch/hobot_audio.launch.py
 
 ### **Linux**
 
-```
+```shell
 export ROS_LOG_DIR=/userdata/
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./install/lib/
 
@@ -208,13 +204,11 @@ sh config/audio.sh
 
 3. 配置文件audio_config.json中voip模式使能与否直接影响是否开启音频降噪功能，与语音识别ASR功能互斥。
 
-   
-
 # 结果分析
 
 ## X3结果展示
 
-```
+```text
 alsa_device_init, snd_pcm_open. handle((nil)), name(hw:0,0), direct(1), mode(0)
 snd_pcm_open succeed. name(hw:0,0), handle(0x557d6e4d00)
 Rate set to 16000Hz (requested 16000Hz)
@@ -231,12 +225,10 @@ alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
 
 ## web效果展示
 
-
-
 # 常见问题
+
 1、无法打开音频设备？
 
 1.1 确认音频设备接线是否正常
 
 1.2 确认是否加载音频驱动
-
