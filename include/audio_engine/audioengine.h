@@ -33,6 +33,7 @@ using AudioDataFunc = std::function<void(char *, int)>;
 using AudioSmartDataFunc = std::function<void(float)>;
 using AudioCmdDataFunc = std::function<void(const char *)>;
 using AudioEventFunc = std::function<void(int)>;
+using AudioASRDataFunc = std::function<void(const char *)>;
 
 class AudioEngine {
  public:
@@ -48,10 +49,10 @@ class AudioEngine {
   ~AudioEngine();
   int Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
            AudioCmdDataFunc cmd_cb, AudioEventFunc event_cb,
-           const int mic_chn,
-           const std::string config_path = "",
-           const int voip_mode = 0,
-           const int mic_type = 0);
+           AudioASRDataFunc asr_cb,
+           const int mic_chn, const std::string config_path,
+           const int voip_mode, const int mic_type,
+           const int asr_output_mode, const int asr_output_channel);
   int DeInit();
   int InputData(char *data, int len, bool end);
   int Start();
@@ -63,6 +64,7 @@ class AudioEngine {
   AudioSmartDataFunc GetAudioSmartDataCb() { return audio_smart_cb_; }
   AudioCmdDataFunc GetAudioCmdDataCb() { return audio_cmd_cb_; }
   AudioEventFunc GetAudioEventCb() { return audio_event_cb_; }
+  AudioASRDataFunc GetASREventCb() { return audio_asr_cb_; }
 
  private:
   int InitSDK();
@@ -81,6 +83,9 @@ class AudioEngine {
 
   int voip_mode_ = 0;
   int mic_type_ = 0;
+  int asr_mode_ = 0;
+  int asr_channel_ = 3;
+
   HrscAudioConfig input_cfg_;
   HrscAudioConfig output_cfg_;
   HrscEffectConfig effect_cfg_;
@@ -89,6 +94,7 @@ class AudioEngine {
   AudioSmartDataFunc audio_smart_cb_ = nullptr;
   AudioCmdDataFunc audio_cmd_cb_ = nullptr;
   AudioEventFunc audio_event_cb_ = nullptr;
+  AudioASRDataFunc audio_asr_cb_ = nullptr;
   bool save_file_ = false;
   std::ofstream audio_inconvert_file_;
   std::string sdk_file_path_ = "./config/hrsc";
