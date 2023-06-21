@@ -1,5 +1,10 @@
 # Changelog for package hobot_audio
 
+tros_2.1.0 (2023-6-21)
+------------------
+1. 更新语音SDK，适配新版本dnn(1.17.3)和easydnn(1.6.1)库
+2. 优化ASR识别效果
+
 tros_2.0.0 (2023-05-11)
 ------------------
 1. 更新package.xml，支持应用独立打包
