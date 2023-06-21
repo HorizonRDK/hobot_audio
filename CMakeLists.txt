@@ -67,7 +67,7 @@ add_executable(hobot_audio
 
 set(BASE_LIBRARIES pthread dl rt m)
 set(X3_HAPI_LIB  hbmedia cam isp vio multimedia iar)
-set(X3_AUDIO_LIB asound dynamicwfst cnn_intf ion hisf hrsc)
+set(X3_AUDIO_LIB asound cnn_intf ion hrsc lvcsr modelvad)
 
 target_link_libraries(${PROJECT_NAME}
    ${X3_AUDIO_LIB} ${X3_HAPI_LIB} ${BASE_LIBRARIES}
