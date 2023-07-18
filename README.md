@@ -1,103 +1,121 @@
 # 功能介绍
 
-hobot_audio package是地平线机器人开发平台的一部分，通过阅读本文档，用户可以在地平线X3开发板上采集音频并且对音频进行AI智能处理，音频数据以及AI结果可以用于其他功能的开发。
+地平线智能语音算法采用本地离线模式，订阅音频数据后送给BPU处理，然后发布**唤醒、命令词识别**、**声源定位DOA角度信息**以及**语音ASR识别结果**等消息。智能语音功能的实现对应于TogetheROS.Bot的**hobot_audio** package，适用于地平线RDK配套的环形四麦阵列。
 
-hobot_audio package源码包含config、audio_capture、audio_engine、horizon_speech_sdk、config等几个部分。
+代码仓库：<https://github.com/HorizonRDK/hobot_audio.git>
 
-config部分包括hobot_audio package运行所需的配置以及加载功能启动所需要运行的一些脚本。
+应用场景：智能语音算法能够识别音频中的唤醒词以及自定义的命令词，并将语音内容解读为对应指令或转化为文字，可实现语音控制以及语音翻译等功能，主要应用于智能家居、智能座舱、智能穿戴设备等领域。
 
-audio_capture主要用于采集原始音频，并且负责将智能语音处理之后的智能数据结果通过自定义的audio_msg::msg::SmartAudioData消息发布出去，供给用户订阅使用，可用于唤醒设备之后进行设备控制等。
+# 物料清单
 
-audio_engine部分将采集到的原始音频数据送入智能语音sdk做智能处理，内部包括智能语音sdk的初始化、启动、送音频数据给sdk处理、sdk的停止等，同时会将智能语音sdk处理后的智能语音数据回调给到audio_capture部分。
+| 机器人名称          | 生产厂家 | 参考链接                                                     |
+| :------------------ | -------- | ------------------------------------------------------------ |
+| RDK X3             | 多厂家 | [点击跳转](https://developer.horizon.ai/sunrise) |
+| 麦克风板           | 微雪电子 | [点击跳转](https://detail.tmall.com/item.htm?abbucket=13&id=695484656823&rn=486b3ebcd340f11fb94c4c8a9c2f1fd0&spm=a1z10.5-b-s.w4011-22714387486.195.5dbb37424SZyDx) |
 
-horizon_speech_sdk部分主要包括地平线智能语音处理sdk的头文件以及库，内部封装了算法模型推理过程。sdk智能处理结果包括唤醒事件、命令词、声源定位的Doa等信息，这些智能信息会通过回调给到hobot_audio package处理并且发布audio_msg::msg::SmartAudioData类型消息。
+# 使用方法
 
-hobot_audio package发布的智能语音消息中的声源定位Doa信息单位为角度，支持线形麦克风阵列和环形麦克风阵列。
+## 准备工作
 
-线形麦克风阵列Doa取值范围：0度~180度。角度的相对位置关系与麦克风的安装位置强相关，计算示意图如下：
+在体验之前，需要具备以下基本条件：
 
-![](./doa_line.png)
+- 地平线RDK已烧录好地平线提供的Ubuntu 20.04系统镜像
+- 音频板正确连接到RDK X3
 
-即麦克风安装的正前方为90度，从麦克风1开始沿正前方到麦克风4的方向画半圆即为0度到180度的范围。
+连接步骤：
+1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
 
-对于与x3派适配的线形四麦来说，麦克风1的位置在带有“X3_MIC_R”的丝印方向端，另一端是麦克风4。
+   ![circle_mic_full](./imgs/circle_mic_full.png)
 
-环形阵列Doa取值范围：0度~360度。角度的相对位置关系与麦克风的安装位置强相关，计算示意图如下：
+2. 接上电源，网线等。
 
-![](./doa_circle.png)
+将地平线RDK与麦克风阵列接好之后上电，在串口上使用指令`i2cdetect -r -y 0`可以检查设备的接入情况，若成功接好，默认可以在I2C上读取到三个地址。如下图：
 
-即麦克风安装的正前方为90度，从麦克风1和麦克风2中间点开始逆时针方向画圆即为0度到360度的范围。
+![detect_mic](./imgs/detect_mic.jpg)
 
-对于与x3派适配的环形四麦来说，麦克风1的位置在3.5mm 耳机输出接口旁，麦克风2和麦克风3在X3 Pi 40PIN GPIO 接口侧。
+若没检测到，请重新检查设备的连接。
 
-hobot_audio package内部使用的语音智能处理sdk是离线模式，不需要在线与云端通讯。
+## 安装功能包
 
-此Package的语音算法sdk适用于与X3适配的线形四麦和环形四麦阵列。
+启动RDK X3后，通过终端或者VNC连接机器人，点击[NodeHub](http://it-dev.horizon.ai/nodehubDetail/167289845913411076)右上方的“一键部署”按钮，复制如下命令在RDK的系统上运行，完成相关Node的安装。
 
-hobot_audio package还包含输出降噪后的语音功能，此功能是否启用可以通过配置文件配置。需要注意的是，输出降噪语音功能与智能识别功能互斥，不同时支持。当开启此功能时，hobot_audio package会通过发布audio_msg::msg::SmartAudioData类型消息将降噪后的音频消息发送出去供其他应用使用。
+智能语音功能支持对原始音频进行降噪之后进行ASR识别，默认的唤醒词和命令词定义在智能语音功能代码模块根目录下*config/hrsc/cmd_word.json*文件，默认为：
 
-# 编译
-
-## 依赖库
-
-- horizon_speech_sdk
-- audio_msg
-
-horizon_speech_sdk是地平线封装的对原始语音进行智能处理的sdk，内部封装了语音的算法处理部分，包括降噪、唤醒、语音VAD、ASR、Doa等处理，此package仅处理唤醒以及ASR识别的命令词部分功能。
-
-audio_msg为自定义的智能音频帧消息格式，用于算法模型推理后，发布推理结果，audio_msg pkg定义在hobot_msgs中。
-
-## 开发环境
-
-- 编程语言: C/C++
-- 开发平台: X3/X86
-- 系统版本：Ubuntu 20.0.4
-- 编译工具链:Linux GCC 9.3.0/Linaro GCC 9.3.0
-
-## 编译
-
- 支持在X3 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
-
-### Ubuntu板端编译
-
-1. 编译环境确认
-   - 板端已安装X3 Ubuntu系统。
-   - 当前编译终端已设置TogetherROS环境变量：`source PATH/setup.bash`。其中PATH为TogetherROS的安装路径。
-   - 已安装ROS2编译工具colcon，安装命令：`pip install -U colcon-common-extensions`
-2. 编译
-
-编译命令：`colcon build --packages-select hobot_audio`
-
-### Docker交叉编译
-
-1. 编译环境确认
-
-   - 在docker中编译，并且docker中已经安装好TogetherROS。docker安装、交叉编译说明、TogetherROS编译和部署说明详见机器人开发平台robot_dev_config repo中的README.md。
-
-2. 编译
-
-   - 编译命令：
-
-```shell
-export TARGET_ARCH=aarch64
-export TARGET_TRIPLE=aarch64-linux-gnu
-export CROSS_COMPILE=/usr/bin/$TARGET_TRIPLE-
-
-colcon build --packages-select hobot_audio \
-   --merge-install \
-   --cmake-force-configure \
-   --cmake-args \
-   --no-warn-unused-cli \
-   -DCMAKE_TOOLCHAIN_FILE=`pwd`/robot_dev_config/aarch64_toolchainfile.cmake
+```json
+{
+    "cmd_word": [
+        "地平线你好",
+        "向前走",
+        "向后退",
+        "向左转",
+        "向右转",
+        "停止运动"
+    ]
+}
 ```
 
-## 注意事项
+唤醒词以及命令词用户可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
 
-编译需要依赖horizon_speech_sdk以及其依赖的算法库。horizon_speech_sdk 以及算法推理库由地平线编译好提供，目前已包括在hobot_audio package里面。
+另外，智能语音功能支持输出声源定位的DOA角度信息，单位为角度，环形麦克风阵列取值范围：0度\~360度，线形麦克风阵列取值范围：0度\~180度。
 
-# 使用介绍
+角度的相对位置关系与麦克风的安装位置强相关，环形麦克风阵列DOA角度示意图如下：
 
-## 依赖
+![doa_circle](./imgs/doa_circle.jpg)
+
+地平线RDK板端运行hobot_audio package：
+
+1. 配置tros.b环境和拷贝配置文件
+
+    ```shell
+    # 配置tros.b环境
+    source /opt/tros/setup.bash
+
+    # 从tros.b的安装路径中拷贝出运行示例需要的配置文件。
+    cp -r /opt/tros/lib/hobot_audio/config/ .
+    ```
+
+2. 选择麦克风阵列类型以及是否开启ASR结果输出
+
+   麦克风阵列类型和ASR输出均通过配置文件*config/audio_config.json*设置，该文件默认配置如下：
+
+   ```json
+   {
+     "micphone_enable": 1,
+     "micphone_rate": 16000,
+     "micphone_chn": 8,  // mic+ref total num
+     "micphone_buffer_time": 0, // ring buffer length in us
+     "micphone_nperiods": 4,  // period time in us
+     "micphone_period_size": 512,  // period_size, how many frames one period contains
+     "voip_mode": 0,   // whether the call mode is voice
+     "mic_type": 0,    // 0: cir mic; 1: linear mic
+     "asr_mode": 0,   // 0: disable, 1: enable asr after wakeup, 2: enable asr anyway
+     "asr_channel": 3, // if asr_mode = 2, output specific channel asr, range(0-3)
+     "save_audio": 0
+   }
+   ```
+
+    * 麦克风阵列类型通过`mic_type`字段设置，默认值为`0`，表示环形麦克风阵列。
+    * ASR输出通过`asr_mode`字段设置，默认值为`0`，表示不输出ASR结果。若要开启ASR结果输出，需要将该字段改为`1`或`2`，其中`1`表示唤醒后才输出ASR结果，`2`表示一直输出ASR结果。
+
+3. 加载音频驱动和启动应用
+
+    ```shell
+    # 加载音频驱动，设备启动之后只需要加载一次
+    bash config/audio.sh
+
+    #启动launch文件
+    ros2 launch hobot_audio hobot_audio.launch.py
+    ```
+
+    注意：加载音频驱动时确保无其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，否则会导致应用打开音频设备失败，报错退出。
+
+# 接口说明
+
+## 话题
+| 名称                          | 消息类型                                                     | 说明                                                   |
+| ----------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| /audio_smart                  |                                       | 发布控制机器人移动的速度指令                           |
+| /audio_asr                    |                                       | 发布识别到的人体目标信息                               |
 
 ## 参数
 
@@ -140,93 +158,19 @@ cmd_word.json
 }
 ```
 
-唤醒词以及命令词用户可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
+# 原理简介
 
-## 运行
+智能语音hobot_audio package开始运行之后，会从麦克风阵列采集音频，并且将采集到的音频数据送入语音智能算法SDK模块做智能处理，输出唤醒事件、命令词、ASR结果等智能信息，其中唤醒事件、命令词通过`audio_msg::msg::SmartAudioData`类型消息发布，ASR结果通过`std_msgs::msg::String`类型消息发布。
 
-编译成功后，将生成的install路径拷贝到地平线X3开发板上（如果是在X3上编译，忽略拷贝步骤），并执行如下命令运行：
+具体流程如下图：
 
-### **Ubuntu**
+![hobot_audio](./imgs/hobot_audio.jpg)
 
-运行方式1，使用ros2 run启动：
+# 参考资料
 
-```shell
-export COLCON_CURRENT_PREFIX=./install
-source ./install/setup.bash
-# config中为示例使用的模型，根据实际安装路径进行拷贝
-# 如果是板端编译（无--merge-install编译选项），拷贝命令为cp -r install/PKG_NAME/lib/PKG_NAME/config/ .，其中PKG_NAME为具体的package名。
-cp -r install/lib/hobot_audio/config/ .
 
-# 加载音频驱动，设备启动只需要加载一次
-bash config/audio.sh
-
-# 启动音频处理pkg
-ros2 run hobot_audio hobot_audio
-
-```
-
-运行方式2，使用launch文件启动：
-
-```shell
-export COLCON_CURRENT_PREFIX=./install
-source ./install/setup.bash
-# config中为示例使用的模型，根据实际安装路径进行拷贝
-# 如果是板端编译（无--merge-install编译选项），拷贝命令为cp -r install/PKG_NAME/lib/PKG_NAME/config/ .，其中PKG_NAME为具体的package名。
-cp -r install/lib/hobot_audio/config/ .
-
-# 启动launch文件
-ros2 launch install/share/hobot_audio/launch/hobot_audio.launch.py
-
-```
-
-### **Linux**
-
-```shell
-export ROS_LOG_DIR=/userdata/
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./install/lib/
-
-# config中为示例使用的模型，根据实际安装路径进行拷贝
-cp -r install/lib/hobot_audio/config/ .
-
-# 加载音频驱动，设备启动只需要加载一次
-sh config/audio.sh
-
-# 启动音频处理pkg
-./install/lib/hobot_audio/hobot_audio
-
-```
-
-## 注意事项
-
-1. 用户若需要自定义唤醒词或者命令词，可以修改hobot_audio pkg的config文件夹下的cmd_word.json文件
-
-2. 本package封装的音频智能处理sdk主要针对与X3适配的线形和环形四麦的麦克风，若用户更换麦克风硬件，可能需要自行适配音频驱动等，此外，算法处理效果也可能会有差异；若硬件有变化，可根据硬件通道数具体情况修改hobot_audio pkg的config文件夹下的audio_config.json配置文件，保证配置的麦克风通道数以及参考信息的通道信息等的正确性，从而确保输入音频智能处理sdk的音频数据的正确性。
-
-3. 配置文件audio_config.json中voip模式使能与否直接影响是否开启音频降噪功能，与语音识别ASR功能互斥。
-
-# 结果分析
-
-## X3结果展示
-
-```text
-alsa_device_init, snd_pcm_open. handle((nil)), name(hw:0,0), direct(1), mode(0)
-snd_pcm_open succeed. name(hw:0,0), handle(0x557d6e4d00)
-Rate set to 16000Hz (requested 16000Hz)
-Buffer size range from 16 to 20480
-Period size range from 16 to 10240
-Requested period size 512 frames
-Periods = 4
-was set period_size = 512
-was set buffer_size = 2048
-alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
-```
-
-以上log显示，音频alsa设备初始化成功，并且打开了音频设备，可正常采集音频。
-
-## web效果展示
 
 # 常见问题
-
 1、无法打开音频设备？
 
 1.1 确认音频设备接线是否正常
