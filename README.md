@@ -26,15 +26,15 @@
 
 1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
 
-   ![circle_mic_full](./imgs/circle_mic_full.png)
+    ![circle_mic_full](./imgs/circle_mic_full.png)
 
 2. 接上电源，网线等。
 
-将地平线RDK与麦克风阵列接好之后上电，在串口上使用指令`i2cdetect -r -y 0`可以检查设备的接入情况，若成功接好，默认可以在I2C上读取到三个地址。如下图：
+    将地平线RDK与麦克风阵列接好之后上电，在串口上使用指令`i2cdetect -r -y 0`可以检查设备的接入情况，若成功接好，默认可以在I2C上读取到三个地址。如下图：
 
-![detect_mic](./imgs/detect_mic.jpg)
+    ![detect_mic](./imgs/detect_mic.jpg)
 
-若没检测到，请重新检查设备的连接。
+    若没检测到，请重新检查设备的连接。
 
 ## 安装功能包
 
