@@ -146,14 +146,14 @@ sudo apt install -y tros-hobot-audio
     hobot_audio默认发布的智能语音消息话题名为：*/audio_smart*，在另一个终端执行使用`ros2 topic list`命令可以查询到此topic信息：
 
     ```bash
-    ros2 topic list
+    $ ros2 topic list
     /audio_smart
     ```
 
     若开启发布ASR结果，发布消息话题为：*/audio_asr*，`ros2 topic list`结果为：
 
     ```bash
-    ros2 topic list
+    $ ros2 topic list
     /audio_smart
     /audio_asr
     ```
