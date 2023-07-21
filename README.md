@@ -86,25 +86,9 @@ sudo apt install -y tros-hobot-audio
 
 2. 配置是否发布ASR结果
 
-   用户如果想在其他应用中订阅ASR结果，需要开启ASR结果发布，该功能通过配置文件 *config/audio_config.json* 设置，该文件默认配置如下：
+    用户如果想在其他应用中订阅ASR结果，需要开启ASR结果发布，该功能通过配置文件 *config/audio_config.json* 中 `asr_mode`字段设置。
 
-   ```json
-   {
-     "micphone_enable": 1,
-     "micphone_rate": 16000,
-     "micphone_chn": 8,  // mic+ref total num
-     "micphone_buffer_time": 0, // ring buffer length in us
-     "micphone_nperiods": 4,  // period time in us
-     "micphone_period_size": 512,  // period_size, how many frames one period contains
-     "voip_mode": 0,   // whether the call mode is voice
-     "mic_type": 0,    // 0: cir mic; 1: linear mic
-     "asr_mode": 0,   // 0: disable, 1: enable asr after wakeup, 2: enable asr anyway
-     "asr_channel": 3, // if asr_mode = 2, output specific channel asr, range(0-3)
-     "save_audio": 0
-   }
-   ```
-
-    是否发布ASR结果通过`asr_mode`字段设置，默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，其中`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
+    该字段默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，其中`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
 
 3. 配置tros.b环境和启动应用
 
@@ -118,6 +102,61 @@ sudo apt install -y tros-hobot-audio
     #启动launch文件
     ros2 launch hobot_audio hobot_audio.launch.py
     ```
+
+4. 结果分析
+
+地平线RDK板端运行终端输出如下信息：
+
+```text
+alsa_device_init, snd_pcm_open. handle((nil)), name(hw:0,0), direct(1), mode(0)
+snd_pcm_open succeed. name(hw:0,0), handle(0x557d6e4d00)
+Rate set to 16000Hz (requested 16000Hz)
+Buffer size range from 16 to 20480
+Period size range from 16 to 10240
+Requested period size 512 frames
+Periods = 4
+was set period_size = 512
+was set buffer_size = 2048
+alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
+```
+
+以上log显示，音频设备初始化成功，并且打开了音频设备，可正常采集音频。
+
+当人依次在麦克风旁边说出“地平线你好”、“向前走”、“向左转”、“向右转”、“向后退”命令词，语音算法sdk经过智能处理后输出识别结果，log显示如下：
+
+```text
+recv hrsc sdk event wakeup success, wkp count is 1
+[WARN] [1657869437.600230208] [hobot_audio]: recv event:0
+recv hrsc sdk doa data: 100
+recv hrsc sdk command data: 向前走
+[WARN] [1657869443.870029101] [hobot_audio]: recv cmd word:向前走
+recv hrsc sdk doa data: 110
+recv hrsc sdk command data: 向左转
+[WARN] [1657869447.623147766] [hobot_audio]: recv cmd word:向左转
+recv hrsc sdk doa data: 100
+recv hrsc sdk command data: 向右转
+[WARN] [1657869449.865822772] [hobot_audio]: recv cmd word:向右转
+recv hrsc sdk doa data: 110
+recv hrsc sdk command data: 向后退
+[WARN] [1657869452.313969277] [hobot_audio]: recv cmd word:向后退
+```
+
+log显示，识别到语音命令词“向前走”、“向左转”、“向右转”、“向后退”，并且输出DOA的角度信息，如“recv hrsc sdk doa data: 110”字段表示DOA角度为110度。
+
+hobot_audio默认发布的智能语音消息话题名为：*/audio_smart*，在另一个终端执行使用`ros2 topic list`命令可以查询到此topic信息：
+
+```bash
+ros2 topic list
+/audio_smart
+```
+
+若开启发布ASR结果，发布消息话题为：*/audio_asr*，`ros2 topic list`结果为：
+
+```bash
+ros2 topic list
+/audio_smart
+/audio_asr
+```
 
 # 接口说明
 
