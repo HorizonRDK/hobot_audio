@@ -64,7 +64,7 @@ int HBAudioCapture::Init() {
   }
 
   /* init micphone device*/
-  micphone_device_->name = const_cast<char *>("hw:0,0");
+  micphone_device_->name = const_cast<char *>(micphone_name_.c_str());
   micphone_device_->format = SND_PCM_FORMAT_S16;
   micphone_device_->direct = SND_PCM_STREAM_CAPTURE;
   micphone_device_->rate = micphone_rate_;
@@ -266,12 +266,43 @@ int HBAudioCapture::ParseConfig(std::string config_file) {
     result = atoi(value.c_str());
   };
 
+  auto parse_line_string = [](const std::string &json, std::string &result) {
+    size_t colonPos = json.find(":");
+    if (colonPos == std::string::npos)
+      return;
+
+    size_t valueStart = json.find_first_not_of(" \t\n\r", colonPos + 1);
+    if (valueStart == std::string::npos)
+      return;
+
+    if (json[valueStart] == '\"') {
+      size_t valueContentStart = valueStart + 1;
+      size_t valueContentEnd = json.find_first_of("\"", valueContentStart);
+      if (valueContentEnd == std::string::npos)
+        return;
+
+      result =
+          json.substr(valueContentStart, valueContentEnd - valueContentStart);
+    } else {
+      size_t valueEnd = json.find_first_of(",}\n\r", valueStart);
+      if (valueEnd == std::string::npos)
+        return;
+
+      result = json.substr(valueStart, valueEnd - valueStart);
+    }
+  };
+
   std::string line;
   while (std::getline(ifs, line)) {
     if (line.find("\"micphone_enable\"") != std::string::npos) {
       parse_line(line, micphone_enable_);
       RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "micphone_enable: %d",
                   micphone_enable_);
+    }
+    if (line.find("\"micphone_name\"") != std::string::npos) {
+      parse_line_string(line, micphone_name_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "micphone_name: %d",
+                  micphone_name_);
     }
     if (line.find("\"micphone_rate\"") != std::string::npos) {
       parse_line(line, micphone_rate_);

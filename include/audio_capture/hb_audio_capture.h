@@ -64,6 +64,7 @@ class HBAudioCapture : public rclcpp::Node {
   bool exit_ = true;
   bool is_init_ = false;
   int audio_num_ = 0;
+  std::string micphone_name_ = "hw:0,0";
   int micphone_rate_ = 16000;
   int micphone_chn_ = 8;
   int micphone_buffer_time_ = 0;
