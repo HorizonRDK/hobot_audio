@@ -82,8 +82,8 @@ sudo apt install -y tros-hobot-audio
 
 2. 配置音频设备号以及是否发布ASR结果
 
-    - 音频设备号通过 *config/audio_config.json* 中 `micphone_name`字段设置，默认为"hw:0,0"。若无其他音频设备连接，则无需修改该字段，若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0Device0。
-    - 默认未开启ASR结果发布功能，该功能通过配置文件 *config/audio_config.json* 中 `asr_mode`字段设置。该字段默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，其中`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
+    - 音频设备号通过 *config/audio_config.json* 中 `micphone_name`字段设置，默认为"hw:0,0"。若加载音频驱动时无其他音频设备连接，则无需修改该字段。若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。
+    - 是否发布ASR结果通过配置文件 *config/audio_config.json* 中 `asr_mode`字段设置。该字段默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
 
 3. 配置tros.b环境和启动应用
 
