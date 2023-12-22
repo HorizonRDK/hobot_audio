@@ -6,10 +6,11 @@
 
 # 物料清单
 
-| 机器人名称 | 生产厂家 | 参考链接                                                        |
-| :--------- | -------- | --------------------------------------------------------------- |
-| RDK X3     | 多厂家   | [点击跳转](https://developer.horizon.cc/rdkx3)                  |
-| 麦克风板   | 微雪电子 | [点击跳转](https://www.waveshare.net/shop/Audio-Driver-HAT.htm) |
+| 机器人名称   | 生产厂家 | 参考链接                                                        |
+| :----------- | -------- | --------------------------------------------------------------- |
+| RDK X3       | 多厂家   | [点击跳转](https://developer.horizon.cc/rdkx3)                  |
+| 4mic麦克风板 | 微雪电子 | [点击跳转](https://www.waveshare.net/shop/Audio-Driver-HAT.htm) |
+| 2mic麦克风板 | 微雪电子 | [点击跳转](https://www.waveshare.net/shop/WM8960-Audio-HAT.htm) |
 
 # 使用方法
 
@@ -23,16 +24,12 @@
 连接步骤：
 
 1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
-
+    - 4mic麦克风板
     ![circle_mic_full](./imgs/circle_mic_full.png)
+    - 2mic麦克风板
+    ![circle_mic_full](./imgs/2mic_full.jpg)
 
-2. 接上电源，网线等。
-
-    将地平线RDK与麦克风阵列接好之后上电，在串口上使用指令`i2cdetect -r -y 0`可以检查设备的接入情况，若成功接好，默认可以在I2C上读取到三个地址。如下图：
-
-    ![detect_mic](./imgs/detect_mic.jpg)
-
-    若没检测到，请重新检查设备的连接。
+2. 安装音频驱动，参考RDK用户手册[音频转接板](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board)章节。
 
 ## 安装功能包
 
@@ -45,7 +42,7 @@ sudo apt install -y tros-hobot-audio
 
 ## 运行智能语音程序
 
-智能语音功能支持对原始音频进行降噪之后进行ASR识别，默认的唤醒词和命令词定义在智能语音功能代码模块根目录下 *config/hrsc/cmd_word.json* 文件，默认为：
+智能语音功能支持对原始音频降噪处理之后进行ASR识别，默认的唤醒词和命令词定义在智能语音功能模块目录下 *config/hrsc/cmd_word.json* 文件，默认为：
 
 ```json
 {
@@ -62,9 +59,9 @@ sudo apt install -y tros-hobot-audio
 
 `cmd_word`第一个词为唤醒词，后续为命令词，这些词用户都可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
 
-另外，智能语音功能支持输出声源定位的DOA角度信息，单位为角度，环形麦克风阵列取值范围：0度\~360度。
+另外，智能语音功能支持输出声源定位DOA角度信息，单位为角度，环形麦克风阵列取值范围：0度\~360度，目前仅4mic麦克风板支持输出DOA信息，2mic麦克风板不支持。
 
-角度的相对位置关系与麦克风的安装位置强相关，环形麦克风阵列DOA角度示意图如下：
+角度的相对位置关系与麦克风的安装位置强相关，4麦环形麦克风阵列DOA角度示意图如下：
 
 ![doa_circle](./imgs/doa_circle.jpg)
 
@@ -75,14 +72,11 @@ sudo apt install -y tros-hobot-audio
     ```shell
     # 从tros.b的安装路径中拷贝出运行示例需要的配置文件，若已拷贝过则可忽略
     cp -r /opt/tros/lib/hobot_audio/config/ .
-
-    # 加载音频驱动，设备启动之后只需要加载一次
-    bash config/audio.sh
     ```
 
-2. 配置音频设备号以及是否发布ASR结果
+2. 确认音频设备以及是否发布ASR结果
 
-    - 音频设备号通过 *config/audio_config.json* 中 `micphone_name`字段设置，默认为"hw:0,0"。若加载音频驱动时无其他音频设备连接，则无需修改该字段。若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。
+    - 确认配置文件 *config/audio_config.json* 中 `micphone_name` 和 `micphone_chn` 字段设置正确。其中 `micphone_name` 字段表示音频设备号，默认为"hw:0,0"，若加载音频驱动时无其他音频设备连接，则无需修改该字段，若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。 `micphone_chn` 字段表示音频板支持的通道数，4mic麦克风板该字段设置为**8**，2mic麦克风该字段设置为**2**。
     - 是否发布ASR结果通过配置文件 *config/audio_config.json* 中 `asr_mode`字段设置。该字段默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
 
 3. 配置tros.b环境和启动应用

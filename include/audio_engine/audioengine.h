@@ -69,7 +69,6 @@ class AudioEngine {
  private:
   int InitSDK();
   void DeInitSDK();
-  int ParseConfig(std::string config_file);
 
  private:
   AudioEngine();

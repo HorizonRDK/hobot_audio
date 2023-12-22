@@ -88,6 +88,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 install(DIRECTORY include/horizon_speech_sdk/lib/
 DESTINATION lib/)
 
+# Install hrsc
+install(DIRECTORY include/horizon_speech_sdk/hrsc
+DESTINATION lib/hobot_audio/)
+
 # Install libraries
 install(TARGETS ${PROJECT_NAME}
   DESTINATION lib/hobot_audio/)
