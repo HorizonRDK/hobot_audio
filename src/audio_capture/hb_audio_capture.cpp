@@ -86,7 +86,7 @@ int HBAudioCapture::Init() {
       std::bind(&HBAudioCapture::AudioCmdDataFunc, this, std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioEventFunc, this, std::placeholders::_1),
       std::bind(&HBAudioCapture::AudioASRDataFunc, this, std::placeholders::_1),
-      micphone_chn_, config_path_, voip_mode_, mic_type_,
+      micphone_chn_, audio_sdk_path_, voip_mode_, mic_type_,
       asr_output_mode_, asr_output_channel_);
 
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "init success");
@@ -301,8 +301,8 @@ int HBAudioCapture::ParseConfig(std::string config_file) {
     }
     if (line.find("\"micphone_name\"") != std::string::npos) {
       parse_line_string(line, micphone_name_);
-      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "micphone_name: %d",
-                  micphone_name_);
+      RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "micphone_name: %s",
+                  micphone_name_.c_str());
     }
     if (line.find("\"micphone_rate\"") != std::string::npos) {
       parse_line(line, micphone_rate_);

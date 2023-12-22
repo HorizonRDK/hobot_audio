@@ -85,31 +85,6 @@ AudioEngine::~AudioEngine() {
   if (adapter_buffer_) delete[] adapter_buffer_;
 }
 
-int AudioEngine::ParseConfig(std::string config_file) {
-  if (config_file.empty()) return -1;
-  RCLCPP_INFO(rclcpp::get_logger("audio_capture"), "hrsc config file:%s",
-              config_file.c_str());
-  std::ifstream ifs(config_file);
-  if (!ifs.is_open()) {
-    RCLCPP_ERROR(rclcpp::get_logger("audio_capture"),
-                 "open config file:%s fail", config_file.c_str());
-    return -1;
-  }
-  std::string line;
-  while (std::getline(ifs, line)) {
-    if (line.find("\"micphone_chn\"") != std::string::npos) {
-      size_t nEndPos = line.find(":");
-      if (nEndPos == std::string::npos) continue;
-      line = line.substr(nEndPos + 1);
-      mic_chn_num_ = atoi(line.c_str());
-      RCLCPP_WARN(rclcpp::get_logger("audio_capture"), "mic_chn_num_: %d",
-                  mic_chn_num_);
-    }
-  }
-  ifs.close();
-  return 0;
-}
-
 int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
                       AudioCmdDataFunc cmd_cb, AudioEventFunc event_cb,
                       AudioASRDataFunc asr_cb,
@@ -126,9 +101,10 @@ int AudioEngine::Init(AudioDataFunc audio_cb, AudioSmartDataFunc audio_smart_cb,
   mic_type_ = mic_type;
   asr_mode_ = asr_output_mode;
   asr_channel_ = asr_output_channel;
-  std::string config_file = config_path + "/audio_config.json";
   sdk_file_path_ = config_path + "/hrsc";
-  // ParseConfig(config_file);
+  if (sdkin_chn_num_ > mic_chn_num_) {
+    sdkin_chn_num_ = 3;
+  }
   int ret = InitSDK();
   if (ret != 0) {
     RCLCPP_ERROR(rclcpp::get_logger("audio_capture"), "init audio sdk fail");
@@ -289,11 +265,22 @@ int AudioEngine::InputData(char *data, int len, bool end) {
 
   if (mic_chn_num_ == sdkin_chn_num_) {
     memcpy(adapter_buffer_, data, size);
-  } else {
-    // 8通道数据->6通道数据，因X3Pi麦克风8mic，参考信号为7,8通道，剔除5, 6通道，数据类型为s16
+  } else if (mic_chn_num_ < sdkin_chn_num_) {
+    // 2通道数据扩展为3通道数据
     char *dst_ptr = adapter_buffer_;
     char *src_ptr = data;
-    int frame_count = len / 16;
+    int frame_count = len / (mic_chn_num_ * 2);
+    int index = 0;
+    while (index++ < frame_count) {
+      memcpy(dst_ptr, src_ptr, mic_chn_num_ * 2);
+      dst_ptr += sdkin_chn_num_ * 2;
+      src_ptr += mic_chn_num_ * 2;
+    }
+  } else {
+    // 8通道数据->6通道数据,剔除5, 6通道
+    char *dst_ptr = adapter_buffer_;
+    char *src_ptr = data;
+    int frame_count = len / (mic_chn_num_ * 2);
     int index = 0;
     while (index++ < frame_count) {
       memcpy(dst_ptr, src_ptr, 4 * 2);
@@ -303,34 +290,7 @@ int AudioEngine::InputData(char *data, int len, bool end) {
       dst_ptr += 2 * 2;
       src_ptr += 2 * 2;
     }
-//     int chn_tmp = sdkin_chn_num_ << 1;
-//     int data_wide = mic_chn_num_ << 1;
-//     int count = len / mic_chn_num_ >> 1;
-//     for (int i = 0; i < count; ++i) {
-//       int k = 0;
-//       for (int j = 0; j < chn_tmp; ++j) {
-//         adapter_buffer_[chn_tmp * i + j] = data[data_wide * i + k];
-//         ++k;
-//         if (k >= data_wide) k = 0;
-//       }
-// #if 0
-//       k = 0;
-//       for (auto item : sdk_ref_chn_id_list_) {
-//         if (k < ref_chn_id_list_.size()) {
-//           adapter_buffer_[chn_tmp * i + (item * 2)] =
-//               data[data_wide * i + ref_chn_id_list_[k] * 2];
-//           adapter_buffer_[chn_tmp * i + (item * 2 + 1)] =
-//               data[data_wide * i + (ref_chn_id_list_[k] * 2 + 1)];
-//         } else {
-//           adapter_buffer_[chn_tmp * i + (item * 2)] = 0;
-//           adapter_buffer_[chn_tmp * i + (item * 2 + 1)] = 0;
-//         }
-//         k++;
-//       }
-// #endif
-//     }
   }
-
 
   HrscAudioBuffer hrsc_buffer;
   hrsc_buffer.audio_data = adapter_buffer_;
