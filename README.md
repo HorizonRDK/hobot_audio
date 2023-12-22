@@ -25,9 +25,11 @@
 
 1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
     - 4mic麦克风板
+
     ![circle_mic_full](./imgs/circle_mic_full.png)
 
     - 2mic麦克风板
+
     ![circle_mic_full](./imgs/2mic_full.jpg)
 
 2. 配置麦克风板，参考RDK用户手册[音频转接板](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board)章节。
