@@ -1,6 +1,6 @@
 # 功能介绍
 
-地平线智能语音算法采用本地离线模式，订阅音频数据后送给BPU处理，然后发布**唤醒、命令词识别**、**声源定位DOA角度信息**以及**语音ASR识别结果**等消息。智能语音功能的实现对应于TogetheROS.Bot的**hobot_audio** package，适用于地平线RDK配套的环形四麦阵列。
+地平线智能语音算法采用本地离线模式，订阅音频数据后送给BPU处理，然后发布**唤醒、命令词识别**、**声源定位DOA角度信息**以及**语音ASR识别结果**等消息。智能语音功能的实现对应于TogetheROS.Bot的**hobot_audio** package，适用于地平线RDK配套的麦克风阵列。
 
 应用场景：智能语音算法能够识别音频中的唤醒词以及自定义的命令词，并将语音内容解读为对应指令或转化为文字，可实现语音控制以及语音翻译等功能，主要应用于智能家居、智能座舱、智能穿戴设备等领域。
 
@@ -26,10 +26,11 @@
 1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
     - 4mic麦克风板
     ![circle_mic_full](./imgs/circle_mic_full.png)
+
     - 2mic麦克风板
     ![circle_mic_full](./imgs/2mic_full.jpg)
 
-2. 安装音频驱动，参考RDK用户手册[音频转接板](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board)章节。
+2. 配置麦克风板，参考RDK用户手册[音频转接板](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board)章节。
 
 ## 安装功能包
 
@@ -67,17 +68,21 @@ sudo apt install -y tros-hobot-audio
 
 地平线RDK板端运行hobot_audio package：
 
-1. 拷贝配置文件和加载音频驱动
+1. 拷贝配置文件
 
     ```shell
     # 从tros.b的安装路径中拷贝出运行示例需要的配置文件，若已拷贝过则可忽略
     cp -r /opt/tros/lib/hobot_audio/config/ .
     ```
 
-2. 确认音频设备以及是否发布ASR结果
+2. 确认配置文件 *config/audio_config.json* 
 
-    - 确认配置文件 *config/audio_config.json* 中 `micphone_name` 和 `micphone_chn` 字段设置正确。其中 `micphone_name` 字段表示音频设备号，默认为"hw:0,0"，若加载音频驱动时无其他音频设备连接，则无需修改该字段，若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。 `micphone_chn` 字段表示音频板支持的通道数，4mic麦克风板该字段设置为**8**，2mic麦克风该字段设置为**2**。
-    - 是否发布ASR结果通过配置文件 *config/audio_config.json* 中 `asr_mode`字段设置。该字段默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
+    需要确认的字段有：
+
+    - `micphone_name` ，配置音频设备号，默认为"hw:0,0"。若加载音频驱动时无其他音频设备连接，则无需修改该字段，若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。 
+    - `micphone_chn` ， 配置音频板支持的通道数，4mic麦克风板该字段设置为`8`，2mic麦克风该字段设置为`2`。
+    - `asr_mode` ，配置是否发布ASR结果，默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
+    - `asr_channel` ，ASR识别使用的通道号，4mic麦克风板设置为`3`，2mic麦克风设置为`1`。
 
 3. 配置tros.b环境和启动应用
 
@@ -166,20 +171,20 @@ sudo apt install -y tros-hobot-audio
 
 audio_config.json配置文件参数说明：
 
-| 参数名               | 类型   | 解释                                                                                                           | 是否必须 | 支持的配置                                                      | 默认值   |
-| -------------------- | ------ | -------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------- | -------- |
-| micphone_enable      | int    | 是否使能麦克风                                                                                                 | 是       | 0/1                                                             | 1        |
-| micphone_name        | string | 麦克风设备号                                                                                                   | 否       | 根据实际情况配置                                                | "hw:0,0" |
-| micphone_rate        | int    | 麦克风采样率                                                                                                   | 否       | 16000                                                           | 16000    |
-| micphone_chn         | int    | 麦克风通道数                                                                                                   | 是       | 根据实际硬件配置                                                | 8        |
-| micphone_buffer_time | int    | 环形缓冲区长度时间，单位微妙                                                                                   | 否       | 根据实际情况配置                                                | 0        |
-| micphone_nperiods    | int    | 周期时间，单位微妙                                                                                             | 否       | 4                                                               | 4        |
-| micphone_period_size | int    | 音频包大小                                                                                                     | 否       | 根据实际情况配置                                                | 512      |
-| voip_mode            | int    | 是否是voip模式，若配置成voip模式，则发布降噪后的音频，并且不支持ASR识别功能。即音频降噪与ASR识别模式互斥。     | 是       | 0/1                                                             | 0        |
-| mic_type             | int    | 麦克风阵列类型                                                                                                 | 否       | 0/1，0：环形麦克风阵列，1：线形麦克风阵列                       | 0        |
-| asr_mode             | int    | asr模式                                                                                                        | 否       | 0/1/2，0: 不输出asr结果， 1: 唤醒后输出asr， 2: 一直开启asr输出 | 0        |
-| asr_channel          | int    | asr通道选择                                                                                                    | 否       | 0/1/2/3，当asr_mode为2时，选择输出具体通道的ars结果             | 3        |
-| save_audio           | int    | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。音频默认保存在程序运行当前目录。 | 否       | 0/1                                                             | 0        |
+| 参数名               | 类型   | 解释                                                                                                           | 是否必须 | 支持的配置                                                                  | 默认值   |
+| -------------------- | ------ | -------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------- | -------- |
+| micphone_enable      | int    | 是否使能麦克风                                                                                                 | 是       | 0/1                                                                         | 1        |
+| micphone_name        | string | 麦克风设备号                                                                                                   | 否       | 根据实际情况配置                                                            | "hw:0,0" |
+| micphone_rate        | int    | 麦克风采样率                                                                                                   | 否       | 16000                                                                       | 16000    |
+| micphone_chn         | int    | 麦克风通道数                                                                                                   | 是       | 8/2                                                                         | 8        |
+| micphone_buffer_time | int    | 环形缓冲区长度时间，单位微妙                                                                                   | 否       | 根据实际情况配置                                                            | 0        |
+| micphone_nperiods    | int    | 周期时间，单位微妙                                                                                             | 否       | 4                                                                           | 4        |
+| micphone_period_size | int    | 音频包大小                                                                                                     | 否       | 根据实际情况配置                                                            | 512      |
+| voip_mode            | int    | 是否是voip模式，若配置成voip模式，则发布降噪后的音频，并且不支持ASR识别功能。即音频降噪与ASR识别模式互斥。     | 是       | 0/1                                                                         | 0        |
+| mic_type             | int    | 麦克风阵列类型                                                                                                 | 否       | 0/1，0：环形麦克风阵列，1：线形麦克风阵列                                   | 0        |
+| asr_mode             | int    | asr模式                                                                                                        | 否       | 0/1/2，0: 不输出asr结果， 1: 唤醒后输出一次asr识别结果， 2: 一直输出asr结果 | 0        |
+| asr_channel          | int    | asr通道选择                                                                                                    | 否       | 4mic麦克风板：0/1/2/3；2mic麦克风板：0/1                                    | 3        |
+| save_audio           | int    | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。音频默认保存在程序运行当前目录。 | 否       | 0/1                                                                         | 0        |
 
 cmd_word.json
 
@@ -211,5 +216,5 @@ cmd_word.json
 1. 无法打开音频设备？
 
 - 确认音频设备连接是否正常
-- 确认是否加载音频驱动
-- 确认配置文件 *config/audio_config.json* 中`micphone_name`字段设置为正确的音频设备号
+- 确认是否正确配置音频设备
+- 确认配置文件 *config/audio_config.json* 设置正确
