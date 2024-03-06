@@ -76,7 +76,8 @@ class HBAudioCapture : public rclcpp::Node {
   int asr_output_channel_ = 3;
 
   std::string config_path_ = "./config";
-  std::string audio_sdk_path_ = "/opt/tros/lib/hobot_audio";
+  // audio_sdk_path_ will be updated at runtime with env "TROS_DISTRO"
+  std::string audio_sdk_path_ = "";
   std::string audio_pub_topic_name_ = "/audio_smart";
   std::string asr_pub_topic_name_ = "/audio_asr";
   std::ofstream audio_infile_;

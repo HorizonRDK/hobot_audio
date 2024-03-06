@@ -38,6 +38,6 @@ def generate_launch_description():
                 {"audio_pub_topic_name": LaunchConfiguration(
                     'audio_pub_topic_name')}
             ],
-            arguments=['--ros-args', '--log-level', 'error']
+            arguments=['--ros-args', '--log-level', 'warn']
         )
     ])

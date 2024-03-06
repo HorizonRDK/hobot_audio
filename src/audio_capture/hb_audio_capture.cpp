@@ -37,11 +37,16 @@ HBAudioCapture::HBAudioCapture(const std::string &node_name,
   this->get_parameter<std::string>("asr_pub_topic_name",
                                    asr_pub_topic_name_);
 
+  std::string tros_distro
+      = std::string(std::getenv("TROS_DISTRO")? std::getenv("TROS_DISTRO") : "");
+  audio_sdk_path_ = "/opt/tros/" + tros_distro + "/lib/hobot_audio";
+  
   std::stringstream ss;
   ss << "Parameter:"
      << "\n config_path: " << config_path_
      << "\n audio_pub_topic_name: " << audio_pub_topic_name_
-     << "\n asr_pub_topic_name: " << asr_pub_topic_name_;
+     << "\n asr_pub_topic_name: " << asr_pub_topic_name_
+     << "\n audio_sdk_path: " << audio_sdk_path_;
   RCLCPP_WARN(rclcpp::get_logger("hobot_audio"), "%s", ss.str().c_str());
 }
 
@@ -78,6 +83,10 @@ int HBAudioCapture::Init() {
                  "alsa device init fail, ret=%d", ret);
     return -1;
   }
+
+  RCLCPP_WARN_STREAM(rclcpp::get_logger("hobot_audio"),
+    "audio_sdk_path_ is [" << audio_sdk_path_ << "]");
+
   AudioEngine::Instance()->Init(
       std::bind(&HBAudioCapture::AudioDataFunc, this, std::placeholders::_1,
                 std::placeholders::_2),

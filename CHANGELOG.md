@@ -1,5 +1,11 @@
 # Changelog for package hobot_audio
 
+tros_2.2.1 (2024-03-06)
+------------------
+1. 更新README，拷贝的配置文件路径由`/opt/tros/lib`变更为`/opt/tros/${TROS_DISTRO}/lib`。
+2. 使用的语音SDK的配置路径由`/opt/tros/lib/hobot_audio`变更为`/opt/tros/${TROS_DISTRO}/lib/hobot_audio`。
+3. launch启动脚本中的`log-level`由`error`变更为`warn`。
+
 tros_2.2.0 (2023-12-22)
 ------------------
 1. 更新语音SDK，同时支持2mic和4mic麦克风板
