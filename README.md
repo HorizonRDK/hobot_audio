@@ -1,107 +1,107 @@
-# 功能介绍
+English| [简体中文](./README_cn.md)
 
-地平线智能语音算法采用本地离线模式，订阅音频数据后送给BPU处理，然后发布**唤醒、命令词识别**、**声源定位DOA角度信息**以及**语音ASR识别结果**等消息。智能语音功能的实现对应于TogetheROS.Bot的**hobot_audio** package，适用于地平线RDK配套的麦克风阵列。
+# Function Introduction
 
-应用场景：智能语音算法能够识别音频中的唤醒词以及自定义的命令词，并将语音内容解读为对应指令或转化为文字，可实现语音控制以及语音翻译等功能，主要应用于智能家居、智能座舱、智能穿戴设备等领域。
+Horizon Intelligent Voice Algorithm adopts local offline mode, subscribes to audio data for processing by BPU, and then publishes messages such as **wake-up, command word recognition**, **sound source localization DOA angle information**, and **voice ASR recognition results**. The implementation of intelligent voice function corresponds to the **hobot_audio** package of TogetheROS.Bot, which is suitable for the microphone array matched with the Horizon RDK.
 
-# 物料清单
+Application Scenarios: The intelligent voice algorithm can recognize wake-up words and custom command words in audio, interpret the voice content into corresponding instructions or convert it into text, enabling functions such as voice control and voice translation. It is mainly used in smart home, smart cabin, smart wearable devices, and other fields.
 
-| 机器人名称   | 生产厂家 | 参考链接                                                        |
-| :----------- | -------- | --------------------------------------------------------------- |
-| RDK X3       | 多厂家   | [点击跳转](https://developer.horizon.cc/rdkx3)                  |
-| 4mic麦克风板 | 微雪电子 | [点击跳转](https://www.waveshare.net/shop/Audio-Driver-HAT.htm) |
-| 2mic麦克风板 | 微雪电子 | [点击跳转](https://www.waveshare.net/shop/WM8960-Audio-HAT.htm) |
+# Bill of Materials
 
-# 使用方法
+| Robot Name   | Manufacturer | Reference Link                                                  |
+| :----------- | ------------ | --------------------------------------------------------------- |
+| RDK X3       | Multiple     | [Click to Jump](https://developer.horizon.cc/rdkx3)              |
+| 4mic Microphone Array   | Waveshare Electronics | [Click to Jump](https://www.waveshare.net/shop/Audio-Driver-HAT.htm) |
+| 2mic Microphone Array   | Waveshare Electronics | [Click to Jump](https://www.waveshare.net/shop/WM8960-Audio-HAT.htm) |
 
-## 准备工作
+# Usage Guide
 
-在体验之前，需要具备以下基本条件：
+## Preparation
 
-- 地平线RDK已烧录好地平线提供的Ubuntu 20.04系统镜像
-- 音频板正确连接到RDK X3
+Before experiencing, you need to meet the following basic requirements:
 
-连接步骤：
+- Horizon RDK has burned the Ubuntu 20.04 system image provided by Horizon.
+- The audio board is correctly connected to RDK X3.
 
-1. 将麦克风板连接到地平线RDK X3 40PIN GPIO 接口上，连接后实物如下图：
-    - 4mic麦克风板
+Connection Steps:
+
+1. Connect the microphone array to the 40PIN GPIO interface of Horizon RDK X3. The physical appearance after connection is as follows:
+    - 4mic Microphone Array
 
     ![circle_mic_full](./imgs/circle_mic_full.png)
 
-    - 2mic麦克风板
+    - 2mic Microphone Array
 
     ![circle_mic_full](./imgs/2mic_full.jpg)
 
-2. 配置麦克风板，参考RDK用户手册[音频转接板](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board)章节。
+2. Configure the microphone array, refer to RDK User Manual [Audio Adapter](https://developer.horizon.cc/documents_rdk/hardware_development/rdk_x3/audio_board) section.
 
-## 安装功能包
+## Installation of Function Package
 
-启动RDK X3后，通过终端SSH或者VNC连接机器人，复制如下命令在RDK的系统上运行，完成相关Node的安装。
+After starting RDK X3, connect to the robot via terminal SSH or VNC, copy and run the following commands on the RDK system to install related Nodes.
 
 ```bash
 sudo apt update
 sudo apt install -y tros-hobot-audio
 ```
 
-## 运行智能语音程序
+## Running Intelligent Voice Program
 
-智能语音功能支持对原始音频降噪处理之后进行ASR识别，默认的唤醒词和命令词定义在智能语音功能模块目录下 *config/hrsc/cmd_word.json* 文件，默认为：
+The intelligent voice function supports ASR recognition after denoising the original audio. The default wake-up word and command word are defined in the directory of the intelligent voice function module as *config/hrsc/cmd_word.json*, which are as follows by default:
 
-```json
-{
+```json{
     "cmd_word": [
-        "地平线你好",
-        "向前走",
-        "向后退",
-        "向左转",
-        "向右转",
-        "停止运动"
+        "Horizon hello",
+        "Move forward",
+        "Move backward",
+        "Turn left",
+        "Turn right",
+        "Stop movement"
     ]
 }
 ```
 
-`cmd_word`第一个词为唤醒词，后续为命令词，这些词用户都可以根据需要配置，若更改唤醒词效果可能会与默认的唤醒词命令词效果有差异。推荐唤醒词以及命令词使用中文，最好是朗朗上口的词语，且词语长度推荐使用3~5个字。
+The first word in `cmd_word` is the wake-up word, followed by command words that users can configure as needed. Changing the wake-up word may result in different effects from the default wake-up word command. It is recommended to use Chinese for wake-up words and command words, preferably words that are easy to pronounce and with a length of 3 to 5 characters.
 
-另外，智能语音功能支持输出声源定位DOA角度信息，单位为角度，环形麦克风阵列取值范围：0度\~360度，目前仅4mic麦克风板支持输出DOA信息，2mic麦克风板不支持。
+In addition, the intelligent voice function supports output of DOA (Direction Of Arrival) angle information, measured in degrees, for a circular microphone array with a range of 0° to 360°. Currently, only the 4-microphone array board supports DOA information output, while the 2-microphone board does not support it.
 
-角度的相对位置关系与麦克风的安装位置强相关，4麦环形麦克风阵列DOA角度示意图如下：
+The relative positional relationship of angles is strongly correlated with the microphone installation position. The following diagram illustrates the DOA angles for a 4-microphone circular array:
 
 ![doa_circle](./imgs/doa_circle.jpg)
 
-地平线RDK板端运行hobot_audio package：
+To run the hobot_audio package on the Horizon RDK board:
 
-1. 拷贝配置文件
+1. Copy the configuration files
 
     ```shell
-    # 从tros.b的安装路径中拷贝出运行示例需要的配置文件，若已拷贝过则可忽略
+    # Copy the configuration files needed for running examples from the installation path of tros.b. This step can be ignored if already copied before.
     cp -r /opt/tros/${TROS_DISTRO}/lib/hobot_audio/config/ .
     ```
 
-2. 确认配置文件 *config/audio_config.json* 
+2. Verify the configuration file *config/audio_config.json* 
 
-    需要确认的字段有：
+    The fields to verify include:
 
-    - `micphone_name` ，配置音频设备号，默认为"hw:0,0"。若加载音频驱动时无其他音频设备连接，则无需修改该字段，若加载音频驱动时有其他音频设备连接，例如USB麦克风或带麦克风功能的USB摄像头，则需要修改该字段为对应的设备号，以"hw:0,0"为例，表示音频设备Card0 Device0。 
-    - `micphone_chn` ， 配置音频板支持的通道数，4mic麦克风板该字段设置为`8`，2mic麦克风该字段设置为`2`。
-    - `asr_mode` ，配置是否发布ASR结果，默认值为`0`，表示不发布ASR结果。若要发布ASR结果，需要将该字段改为`1`或`2`，`1`表示唤醒后进行一次ASR识别并发布结果，`2`表示一直进行ASR识别并发布结果。
-    - `asr_channel` ，ASR识别使用的通道号，4mic麦克风板设置为`3`，2mic麦克风设置为`1`。
+    - `micphone_name`, configure the audio device number, default is "hw:0,0". If there are no other audio devices connected when loading the audio driver, there is no need to modify this field. If there are other audio devices connected when loading the audio driver, such as a USB microphone or a USB camera with microphone function, then this field needs to be modified to the corresponding device number. For example, "hw:0,0" represents audio device Card0 Device0.
+    - `micphone_chn`, configure the number of channels supported by the audio board. Set this field to `8` for a 4-microphone board, and `2` for a 2-microphone board.
+    - `asr_mode`, configure whether to publish ASR (Automatic Speech Recognition) results, default value is `0`, indicating no ASR result publication. For publishing ASR results, this field needs to be changed to `1` or `2`, where `1` means performing ASR recognition once after wake-up and publishing the result, and `2` means continuously performing ASR recognition and publishing results.
+    - `asr_channel`, channel number used for ASR recognition, set to `3` for a 4-microphone board, and `1` for a 2-microphone board.
 
-3. 配置tros.b环境和启动应用
+3. Configure the tros.b environment and start the application
 
     ```shell
-    # 配置tros.b环境
+    # Configure the tros.b environment
     source /opt/tros/setup.bash
 
-    # 屏蔽调式打印信息
+    # Suppress debug print information
     export GLOG_minloglevel=3
 
-    #启动launch文件
+    # Start the launch file
     ros2 launch hobot_audio hobot_audio.launch.py
     ```
+4. Result Analysis
 
-4. 结果分析
-
-    地平线RDK板端运行终端输出如下信息：
+    The output information of the Horizon RDK board end terminal is as follows:
 
     ```text
     alsa_device_init, snd_pcm_open. handle((nil)), name(hw:0,0), direct(1), mode(0)
@@ -116,107 +116,107 @@ sudo apt install -y tros-hobot-audio
     alsa_device_init. hwparams(0x557d6e4fa0), swparams(0x557d6e5210)
     ```
 
-    以上log显示，音频设备初始化成功，并且打开了音频设备，可正常采集音频。
+    The above log shows that the audio device initialization was successful, and the audio device was opened for audio capture.
 
-    当人依次在麦克风旁边说出“地平线你好”、“向前走”、“向左转”、“向右转”、“向后退”命令词，语音算法sdk经过智能处理后输出识别结果，log显示如下：
+    When a person successively says the command words "地平线你好" (Horizon, hello), "向前走" (Move forward), "向左转" (Turn left), "向右转" (Turn right), "向后退" (Move backward) near the microphone, the voice algorithm SDK outputs the recognition results after intelligent processing, as shown in the log:
 
     ```text
     recv hrsc sdk event wakeup success, wkp count is 1
     [WARN] [1657869437.600230208] [hobot_audio]: recv event:0
     recv hrsc sdk doa data: 100
-    recv hrsc sdk command data: 向前走
-    [WARN] [1657869443.870029101] [hobot_audio]: recv cmd word:向前走
+    recv hrsc sdk command data: 向前走 (Move forward)
+    [WARN] [1657869443.870029101] [hobot_audio]: recv cmd word:向前走 (Move forward)
     recv hrsc sdk doa data: 110
-    recv hrsc sdk command data: 向左转
-    [WARN] [1657869447.623147766] [hobot_audio]: recv cmd word:向左转
+    recv hrsc sdk command data: 向左转 (Turn left)
+    [WARN] [1657869447.623147766] [hobot_audio]: recv cmd word:向左转 (Turn left)
     recv hrsc sdk doa data: 100
-    recv hrsc sdk command data: 向右转
-    [WARN] [1657869449.865822772] [hobot_audio]: recv cmd word:向右转
+    recv hrsc sdk command data: 向右转 (Turn right)
+    [WARN] [1657869449.865822772] [hobot_audio]: recv cmd word:向右转 (Turn right)
     recv hrsc sdk doa data: 110
-    recv hrsc sdk command data: 向后退
-    [WARN] [1657869452.313969277] [hobot_audio]: recv cmd word:向后退
+    recv hrsc sdk command data: 向后退 (Move backward)
+    [WARN] [1657869452.313969277] [hobot_audio]: recv cmd word:向后退 (Move backward)
     ```
 
-    log显示，识别到语音命令词“向前走”、“向左转”、“向右转”、“向后退”，并且输出DOA的角度信息，如“recv hrsc sdk doa data: 110”字段表示DOA角度为110度。
+    The log shows that the voice commands "Move forward," "Turn left," "Turn right," and "Move backward" were recognized, and the angle information of Direction of Arrival (DOA) is output, such as the field "recv hrsc sdk doa data: 110" indicating a DOA angle of 110 degrees.
 
-    hobot_audio默认发布的智能语音消息话题名为：*/audio_smart*，在另一个终端执行使用`ros2 topic list`命令可以查询到此topic信息：
+    The default topic name for intelligent voice messages published by hobot_audio is: */audio_smart*, and executing the `ros2 topic list` command in another terminal can query this topic information:
 
     ```bash
     $ ros2 topic list
     /audio_smart
     ```
-
-    若开启发布ASR结果，发布消息话题为：*/audio_asr*，`ros2 topic list`结果为：
-
-    ```bash
+    
+    If ASR results publishing is enabled, the message topic published is: */audio_asr*, and the result of `ros2 topic list` is:```bash
     $ ros2 topic list
     /audio_smart
     /audio_asr
     ```
 
-# 接口说明
+# Interface Description
 
-## 话题
+## Topics
 
-| 名称         | 消息类型                                                                                                               | 说明                               |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| /audio_smart | [audio_msg/msg/SmartAudioData](https://github.com/HorizonRDK/hobot_msgs/blob/develop/audio_msg/msg/SmartAudioData.msg) | 发布智能语音处理后的数据和智能结果 |
-| /audio_asr   | std_msgs/msg/String                                                                                                    | 发布ASR识别结果                    |
+| Name         | Message Type                                                                                                            | Description                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| /audio_smart | [audio_msg/msg/SmartAudioData](https://github.com/HorizonRDK/hobot_msgs/blob/develop/audio_msg/msg/SmartAudioData.msg) | Publish data and results processed by smart audio      |
+| /audio_asr   | std_msgs/msg/String                                                                                                     | Publish ASR recognition results                        |
 
-## 参数
+## Parameters
 
-| 参数名               | 类型        | 解释               | 是否必须 | 支持的配置       | 默认值       |
-| -------------------- | ----------- | ------------------ | -------- | ---------------- | ------------ |
-| config_path          | std::string | 配置文件路径       | 否       | 根据实际情况配置 | ./config     |
-| audio_pub_topic_name | std::string | 音频智能帧发布话题 | 否       | 根据实际情况配置 | /audio_smart |
-| asr_pub_topic_name   | std::string | ASR结果发布话题    | 否       | 根据实际情况配置 | /audio_asr   |
+| Parameter Name      | Type        | Description            | Mandatory | Supported Configurations | Default Value |
+| -------------------- | ----------- | ---------------------- | --------- | ----------------------- | ------------- |
+| config_path          | std::string | Configuration file path| No        | Configure according to the actual situation | ./config    |
+| audio_pub_topic_name | std::string | Audio smart frame publishing topic | No | Configure according to the actual situation | /audio_smart |
+| asr_pub_topic_name   | std::string | ASR result publishing topic | No      | Configure according to the actual situation | /audio_asr   |
 
-audio_config.json配置文件参数说明：
+Explanation of parameters in audio_config.json file:
 
-| 参数名               | 类型   | 解释                                                                                                           | 是否必须 | 支持的配置                                                                  | 默认值   |
-| -------------------- | ------ | -------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------- | -------- |
-| micphone_enable      | int    | 是否使能麦克风                                                                                                 | 是       | 0/1                                                                         | 1        |
-| micphone_name        | string | 麦克风设备号                                                                                                   | 否       | 根据实际情况配置                                                            | "hw:0,0" |
-| micphone_rate        | int    | 麦克风采样率                                                                                                   | 否       | 16000                                                                       | 16000    |
-| micphone_chn         | int    | 麦克风通道数                                                                                                   | 是       | 8/2                                                                         | 8        |
-| micphone_buffer_time | int    | 环形缓冲区长度时间，单位微妙                                                                                   | 否       | 根据实际情况配置                                                            | 0        |
-| micphone_nperiods    | int    | 周期时间，单位微妙                                                                                             | 否       | 4                                                                           | 4        |
-| micphone_period_size | int    | 音频包大小                                                                                                     | 否       | 根据实际情况配置                                                            | 512      |
-| voip_mode            | int    | 是否是voip模式，若配置成voip模式，则发布降噪后的音频，并且不支持ASR识别功能。即音频降噪与ASR识别模式互斥。     | 是       | 0/1                                                                         | 0        |
-| mic_type             | int    | 麦克风阵列类型                                                                                                 | 否       | 0/1，0：环形麦克风阵列，1：线形麦克风阵列                                   | 0        |
-| asr_mode             | int    | asr模式                                                                                                        | 否       | 0/1/2，0: 不输出asr结果， 1: 唤醒后输出一次asr识别结果， 2: 一直输出asr结果 | 0        |
-| asr_channel          | int    | asr通道选择                                                                                                    | 否       | 4mic麦克风板：0/1/2/3；2mic麦克风板：0/1                                    | 3        |
-| save_audio           | int    | 是否保存音频数据，包括麦克风采集的原始音频和voip模式下算法输出的降噪后的音频。音频默认保存在程序运行当前目录。 | 否       | 0/1                                                                         | 0        |
+| Parameter Name      | Type   | Explanation                                  | Mandatory | Supported Configurations | Default Value |
+| -------------------- | ------ | ------------------------------------------- | --------- | ------------------------ | ------------- |
+| micphone_enable      | int    | Whether to enable the microphone             | Yes       | 0/1                      | 1             |
+| micphone_name        | string | Microphone device number                     | No        | Configure according to the actual situation | "hw:0,0"     |
+| micphone_rate        | int    | Microphone sampling rate                     | No        | 16000                    | 16000         |
+| micphone_chn         | int    | Number of microphone channels                | Yes       | 8/2                      | 8             |
+| micphone_buffer_time | int    | Circular buffer length in microseconds       | No        | Configure according to the actual situation | 0             |
+| micphone_nperiods    | int    | Period time in microseconds                   | No       | 4                        | 4             |
+| micphone_period_size | int    | Audio packet size                           | No        | Configure according to the actual situation | 512           |
+| voip_mode            | int    | Whether it is in voip mode, if configured as voip mode, it publishes noise-reduced audio and does not support ASR recognition function. Noise reduction and ASR recognition modes are mutually exclusive. | Yes | 0/1 | 0 |
+| mic_type             | int    | Microphone array type                        | No        | 0/1, 0: Circular microphone array, 1: Linear microphone array | 0 |
+| asr_mode             | int    | ASR mode                                     | No        | 0/1/2, 0: Do not output asr results, 1: Output ASR recognition results once after wake-up, 2: Output ASR results continuously | 0 |
+| asr_channel          | int    | ASR channel selection                        | No        | 4microphone board: 0/1/2/3; 2microphone board: 0/1 | 3 |
+| save_audio           | int    | Whether to save audio data, including the original audio collected by the microphone and the noise-reduced audio output by the algorithm in voip mode. Audio is saved in the current directory where the program is running by default. | No | 0/1 | 0 |
 
 cmd_word.json
 
-此配置文件配置语音智能分析部分的唤醒词以及命令词，配置文件的第一项为唤醒词，后面的是命令词。默认配置文件配置如下：
+This configuration file configures wake-up words and command words for the speech intelligence analysis part. The first item in the configuration file is the wake-up word, followed by command words. The default configuration file is as follows:
 
 ```json
 {
     "cmd_word": [
-        "地平线你好",
-        "向前走",
-        "向后退",
-        "向左转",
-        "向右转",
-        "停止运动"
+        "Hello Horizon",
+        "Go forward",
+        "Go back",```json
+{
+    "commands": [
+        "Turn left",
+        "Turn right",
+        "Stop moving"
     ]
 }
 ```
 
-# 原理简介
+# Introduction
 
-智能语音hobot_audio package开始运行之后，会从麦克风阵列采集音频，并且将采集到的音频数据送入语音智能算法SDK模块做智能处理，输出唤醒事件、命令词、ASR结果等智能信息，其中唤醒事件、命令词通过`audio_msg::msg::SmartAudioData`类型消息发布，ASR结果通过`std_msgs::msg::String`类型消息发布。
+After the intelligent voice hobot_audio package starts running, it will collect audio from the microphone array and send the collected audio data to the smart speech algorithm SDK module for intelligent processing. It outputs intelligent information such as wake-up events, command words, ASR results, etc. Wake-up events and command words are published as messages of type `audio_msg::msg::SmartAudioData`, and ASR results are published as messages of type `std_msgs::msg::String`.
 
-具体流程如下图：
+The specific process is as shown in the following figure:
 
 ![hobot_audio](./imgs/hobot_audio.jpg)
 
-# 常见问题
+# Frequently Asked Questions
 
-1. 无法打开音频设备？
+1. Unable to open the audio device?
 
-- 确认音频设备连接是否正常
-- 确认是否正确配置音频设备
-- 确认配置文件 *config/audio_config.json* 设置正确
+- Confirm if the audio device connection is normal
+- Confirm if the audio device is correctly configured
+- Confirm if the configuration file *config/audio_config.json* is set correctly
