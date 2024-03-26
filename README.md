@@ -49,7 +49,8 @@ sudo apt install -y tros-hobot-audio
 
 The intelligent voice function supports ASR recognition after denoising the original audio. The default wake-up word and command word are defined in the directory of the intelligent voice function module as *config/hrsc/cmd_word.json*, which are as follows by default:
 
-```json{
+```json
+{
     "cmd_word": [
         "Horizon hello",
         "Move forward",
