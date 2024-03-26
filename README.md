@@ -146,7 +146,9 @@ To run the hobot_audio package on the Horizon RDK board:
     /audio_smart
     ```
     
-    If ASR results publishing is enabled, the message topic published is: */audio_asr*, and the result of `ros2 topic list` is:```bash
+    If ASR results publishing is enabled, the message topic published is: */audio_asr*, and the result of `ros2 topic list` is:
+
+    ```bash
     $ ros2 topic list
     /audio_smart
     /audio_asr
